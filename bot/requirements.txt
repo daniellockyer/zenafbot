@@ -1,0 +1,4 @@
+certifi==2017.11.5
+future==0.16.0
+psycopg2==2.7.3.2
+python-telegram-bot==9.0.0
