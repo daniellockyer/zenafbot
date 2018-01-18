@@ -89,7 +89,7 @@ def format_top_results(arr):
         if not username:
             name_to_show = first_name
             if last_name:
-                full_name += f' {last_name}'
+                name_to_show += f' {last_name}'
         else:
             name_to_show = username
 
