@@ -4,9 +4,8 @@ import db
 import os
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt; plt.rcdefaults()
+import matplotlib.pyplot as plt #; plt.rcdefaults()
 import numpy as np
-import matplotlib.pyplot as plt
 
 import datetime
 
@@ -44,14 +43,15 @@ def generate_past_week_report(results):
         
     y_pos = np.arange(len(past_week.keys()))
     performance = past_week.values()
- 
+
     plt.bar(y_pos, performance, align='center', alpha=0.5)
-    plt.xticks(y_pos, past_week)
+    plt.xticks(y_pos, past_week.keys())
     plt.ylabel('Minutes')
     plt.title('Last 7 days report')
 
     plt.savefig('barchart.png')
-
+    plt.close()
+    
 def stats(bot, update):
     db.get_or_create_user(update.message.from_user)
 
