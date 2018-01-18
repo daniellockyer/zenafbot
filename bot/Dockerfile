@@ -1,12 +1,9 @@
 FROM python:3.6.1-alpine
 
-RUN apk update \
-  && apk add \
-    build-base \
-    postgresql \
-    postgresql-dev \
-    libpq
-    
+RUN echo "http://dl-8.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
+RUN apk --no-cache --update-cache add gcc gfortran python python-dev py-pip build-base wget freetype-dev libpng-dev openblas-dev postgresql postgresql-dev libpq
+RUN ln -s /usr/include/locale.h /usr/include/xlocale.h
+
 RUN mkdir /code
 WORKDIR /code
 COPY ./requirements.txt .

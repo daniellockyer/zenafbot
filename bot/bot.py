@@ -2,6 +2,13 @@ from telegram.ext import Updater, CommandHandler
 import logging
 import db
 import os
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt; plt.rcdefaults()
+import numpy as np
+import matplotlib.pyplot as plt
+
+import datetime
 
 TOKEN = os.environ.get('BOT_TOKEN', None)
 if TOKEN is None:
@@ -14,14 +21,45 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 def meditate(bot, update):
     db.get_or_create_user(update.message.from_user)
-    db.increase_streak_of(update.message.from_user.id)
+    if(len(update.message.text.split(' ')) == 2):
+        db.increase_streak_of(update.message.from_user.id)
+
+        minutes = update.message.text.split(' ')[1]
+        db.add_timelog_to(update.message.from_user.id, minutes)
+
+        bot.send_message(chat_id=update.message.chat_id, text="You have meditated today!")
+    else:
+        bot.send_message(chat_id=update.message.chat_id, text="You need to specify how many minutes did you meditate!")
     
-    bot.send_message(chat_id=update.message.chat_id, text="You have meditated today!")
+def generate_past_week_report(results):
+    
+    now = datetime.datetime.now()
+    past_week = {}
+    for days_to_subtract in range(7):
+        d = datetime.datetime.today() - datetime.timedelta(days=days_to_subtract)
+        past_week[d.day] = 0
+
+    for result in results:
+        past_week[result[1].day] += result[0]
+        
+    y_pos = np.arange(len(past_week.keys()))
+    performance = past_week.values()
+ 
+    plt.bar(y_pos, performance, align='center', alpha=0.5)
+    plt.xticks(y_pos, past_week)
+    plt.ylabel('Minutes')
+    plt.title('Last 7 days report')
+
+    plt.savefig('barchart.png')
 
 def stats(bot, update):
     db.get_or_create_user(update.message.from_user)
-    streak = db.get_streak_of(update.message.from_user.id)
-    bot.send_message(chat_id=update.message.chat_id, text=f"Your streak is {streak}!")
+
+    results = db.get_past_week_timelog_from(update.message.from_user.id)
+    generate_past_week_report(results)
+    with open('./barchart.png', 'rb') as photo:
+        bot.send_photo(chat_id=update.message.chat_id, photo=photo)
+
 
 def format_top_results(arr):
     line = []

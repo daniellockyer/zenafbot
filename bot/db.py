@@ -64,3 +64,16 @@ def get_top(n):
     results = cursor.fetchall()
     get_connection().commit()
     return results
+
+def add_timelog_to(id, minutes):
+    cursor = get_connection().cursor()
+    cursor.execute("INSERT INTO timelog(id, minutes) VALUES (%s, %s)", (id, minutes))
+    get_connection().commit()
+    cursor.close()
+
+def get_past_week_timelog_from(id):
+    cursor = get_connection().cursor()
+    cursor.execute("SELECT minutes, created_at FROM timelog WHERE id = %s AND created_at > current_date - interval '7 days'", (id,))
+    results = cursor.fetchall()
+    get_connection().commit()
+    return results
