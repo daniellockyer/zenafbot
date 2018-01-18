@@ -20,13 +20,16 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 def meditate(bot, update):
     db.get_or_create_user(update.message.from_user)
-    if len(update.message.text.split(' ')) == 2:
+    if len(update.message.text.split(' ')) >= 2:
         db.increase_streak_of(update.message.from_user.id)
 
         minutes = update.message.text.split(' ')[1]
-        db.add_timelog_to(update.message.from_user.id, minutes)
-
-        bot.send_message(chat_id=update.message.chat_id, text="You have meditated today!")
+        try:
+            minutes = int(minutes)
+            db.add_timelog_to(update.message.from_user.id, minutes)
+            bot.send_message(chat_id=update.message.chat_id, text="You have meditated today!")
+        except ValueError:
+            bot.send_message(chat_id=update.message.chat_id, text="You need to specify the minutes as a number!")
     else:
         bot.send_message(chat_id=update.message.chat_id, text="You need to specify how many minutes did you meditate!")
     
@@ -36,7 +39,7 @@ def generate_timelog_report_from(id, days):
 
     now = datetime.datetime.now()
     past_week = {}
-    for days_to_subtract in range(days):
+    for days_to_subtract in reversed(range(days)):
         d = datetime.datetime.today() - datetime.timedelta(days=days_to_subtract)
         past_week[d.day] = 0
 
