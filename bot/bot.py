@@ -20,7 +20,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 def meditate(bot, update):
     db.get_or_create_user(update.message.from_user)
-    if(len(update.message.text.split(' ')) == 2):
+    if len(update.message.text.split(' ')) == 2:
         db.increase_streak_of(update.message.from_user.id)
 
         minutes = update.message.text.split(' ')[1]
@@ -30,33 +30,47 @@ def meditate(bot, update):
     else:
         bot.send_message(chat_id=update.message.chat_id, text="You need to specify how many minutes did you meditate!")
     
-def generate_past_week_report(results):
+def generate_timelog_report_from(id, days):
     
+    results = db.get_timelog_from(id, days)
+
     now = datetime.datetime.now()
     past_week = {}
-    for days_to_subtract in range(7):
+    for days_to_subtract in range(days):
         d = datetime.datetime.today() - datetime.timedelta(days=days_to_subtract)
         past_week[d.day] = 0
 
     for result in results:
         past_week[result[1].day] += result[0]
-        
+    
+    total = 0
+    for key in past_week.keys():
+        total += past_week[key]
+
     y_pos = np.arange(len(past_week.keys()))
     performance = past_week.values()
 
     plt.bar(y_pos, performance, align='center', alpha=0.5)
     plt.xticks(y_pos, past_week.keys())
     plt.ylabel('Minutes')
-    plt.title('Last 7 days report')
+    plt.title(f'Last {days} days report. Total: {total} minutes')
 
     plt.savefig('barchart.png')
     plt.close()
     
 def stats(bot, update):
     db.get_or_create_user(update.message.from_user)
+    if len(update.message.text.split(' ')) == 2:
+        frequency = update.message.text.split(' ')[1]
+        if frequency == 'weekly':
+            generate_timelog_report_from(update.message.from_user.id, 7)
+        elif frequency == 'biweekly':
+            generate_timelog_report_from(update.message.from_user.id, 14)
+        elif frequency == 'monthly':
+            generate_timelog_report_from(update.message.from_user.id, 30)
+    else:
+        generate_timelog_report_from(update.message.from_user.id, 7)
 
-    results = db.get_past_week_timelog_from(update.message.from_user.id)
-    generate_past_week_report(results)
     with open('./barchart.png', 'rb') as photo:
         bot.send_photo(chat_id=update.message.chat_id, photo=photo)
 

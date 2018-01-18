@@ -71,9 +71,9 @@ def add_timelog_to(id, minutes):
     get_connection().commit()
     cursor.close()
 
-def get_past_week_timelog_from(id):
+def get_timelog_from(id, days):
     cursor = get_connection().cursor()
-    cursor.execute("SELECT minutes, created_at FROM timelog WHERE id = %s AND created_at > current_date - interval '7 days'", (id,))
+    cursor.execute("SELECT minutes, created_at FROM timelog WHERE id = %s AND created_at > current_date - interval '%s days'", (id, days))
     results = cursor.fetchall()
     get_connection().commit()
     return results
