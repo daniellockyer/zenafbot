@@ -21,9 +21,10 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 def meditate(bot, update):
     db.get_or_create_user(update.message.from_user)
     if len(update.message.text.split(' ')) >= 2:
-        db.increase_streak_of(update.message.from_user.id)
-
         minutes = update.message.text.split(' ')[1]
+        if minutes < 5 or minutes > 1000:
+            return
+        db.increase_streak_of(update.message.from_user.id)
         try:
             minutes = int(minutes)
             db.add_timelog_to(update.message.from_user.id, minutes)
