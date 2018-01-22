@@ -22,11 +22,11 @@ def meditate(bot, update):
     db.get_or_create_user(update.message.from_user)
     if len(update.message.text.split(' ')) >= 2:
         minutes = update.message.text.split(' ')[1]
+        minutes = int(minutes)
         if minutes < 5 or minutes > 1000:
             return
         db.increase_streak_of(update.message.from_user.id)
         try:
-            minutes = int(minutes)
             db.add_timelog_to(update.message.from_user.id, minutes)
             bot.send_message(chat_id=update.message.chat_id, text="You have meditated today!")
         except ValueError:
