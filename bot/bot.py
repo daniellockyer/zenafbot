@@ -36,7 +36,7 @@ def meditate(bot, update):
     
 def generate_timelog_report_from(id, days):
     
-    results = db.get_timelog_from(id, days)
+    results = db.get_timelog_from(id, days - 1)
 
     now = datetime.datetime.now()
     past_week = {}
