@@ -28,11 +28,11 @@ def meditate(bot, update):
         db.increase_streak_of(update.message.from_user.id)
         try:
             db.add_timelog_to(update.message.from_user.id, minutes)
-            bot.send_message(chat_id=update.message.chat_id, text="You have meditated today!")
+            bot.send_message(chat_id=update.message.from_user.id, text="You have meditated today!")
         except ValueError:
-            bot.send_message(chat_id=update.message.chat_id, text="You need to specify the minutes as a number!")
+            bot.send_message(chat_id=update.message.from_user.id, text="You need to specify the minutes as a number!")
     else:
-        bot.send_message(chat_id=update.message.chat_id, text="You need to specify how many minutes did you meditate!")
+        bot.send_message(chat_id=update.message.from_user.id, text="You need to specify how many minutes did you meditate!")
     
 def generate_timelog_report_from(id, days):
     
