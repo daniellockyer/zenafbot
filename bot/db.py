@@ -47,6 +47,7 @@ def increase_streak_of(id):
     cursor = get_connection().cursor()
     cursor.execute('UPDATE users SET streak = streak + 1 WHERE id = %s', (id,))
     get_connection().commit()
+    cursor.close()
 
 def get_streak_of(id):
     cursor = get_connection().cursor()
@@ -65,15 +66,15 @@ def get_top(n):
     get_connection().commit()
     return results
 
-def add_timelog_to(id, minutes):
+def add_to_table(table, id, value):
     cursor = get_connection().cursor()
-    cursor.execute("INSERT INTO timelog(id, minutes) VALUES (%s, %s)", (id, minutes))
+    cursor.execute("INSERT INTO "+table+"(id, value) VALUES (%s, %s)", (id, value))
     get_connection().commit()
     cursor.close()
 
-def get_timelog_from(id, days):
+def get_values(table, id, days):
     cursor = get_connection().cursor()
-    cursor.execute("SELECT minutes, created_at FROM timelog WHERE id = %s AND created_at > current_date - interval '%s days'", (id, days))
+    cursor.execute("SELECT value, created_at FROM "+table+" WHERE id = %s AND created_at > current_date - interval '%s days'", (id, days))
     results = cursor.fetchall()
     get_connection().commit()
     return results
