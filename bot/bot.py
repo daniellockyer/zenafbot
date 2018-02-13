@@ -29,7 +29,7 @@ def meditate(bot, update):
     def successCallback(name_to_show, value):
         bot.send_message(chat_id=update.message.chat.id, text="🙏 {} meditated for {} minutes 🙏".format(name_to_show, value))
         db.increase_streak_of(update.message.from_user.id)
-    
+
     delete_and_send(bot, update, validationCallback, successCallback, {
         "table_name": "meditation",
         "wrong_length": "🙏 How many minutes did you meditate? 🙏",
@@ -54,7 +54,7 @@ def anxiety(bot, update):
 
         bot.send_message(chat_id=update.message.chat.id,
             text="{} {} rated their anxiety at {} {}".format(em, name_to_show, value, em))
-    
+
     delete_and_send(bot, update, validationCallback, successCallback, {
         "table_name": "anxiety",
         "wrong_length": "Please give your anxiety levels.",
@@ -71,7 +71,7 @@ def sleep(bot, update):
 
     def successCallback(name_to_show, value):
         bot.send_message(chat_id=update.message.chat.id, text="💤 {} slept for {} hours 💤".format(name_to_show, value))
-    
+
     delete_and_send(bot, update, validationCallback, successCallback, {
         "table_name": "sleep",
         "wrong_length": "💤 Please give how many hours you slept. 💤",
@@ -146,7 +146,7 @@ def stats(bot, update):
         with open('./chart.png', 'rb') as photo:
             bot.send_photo(chat_id=update.message.chat_id, photo=photo)
     elif command == "/anxietystats":
-        # TODO: 
+        # TODO:
         bot.send_message(chat_id=update.message.from_user.id, text="Working on it 🙏")
     elif command == "/sleepstats":
         generate_timelog_report_from("sleep", update.message.from_user.id, duration)
