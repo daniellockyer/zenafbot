@@ -3,6 +3,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from telegram.ext import Updater, CommandHandler
+from telegram.error import BadRequest
 import db
 
 import logging
@@ -115,17 +116,19 @@ def delete_and_send(bot, update, validationCallback, successCallback, strings):
         bot.send_message(chat_id=update.message.from_user.id, text=strings["value_error"])
 
     db.add_to_table(strings["table_name"], update.message.from_user.id, value)
-    success = bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
+    try:
+        bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
+    except BadRequest:
+        pass
 
-    if success:
-        user = update.message.from_user
-        if user.username:
-            name_to_show = "@" + user.username
-        else:
-            name_to_show = user.first_name
-            if user.last_name:
-                name_to_show += " " + user.last_name
-        successCallback(name_to_show, value)
+    user = update.message.from_user
+    if user.username:
+        name_to_show = "@" + user.username
+    else:
+        name_to_show = user.first_name
+        if user.last_name:
+            name_to_show += " " + user.last_name
+    successCallback(name_to_show, value)
 
 def stats(bot, update):
     db.get_or_create_user(update.message.from_user)
