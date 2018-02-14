@@ -110,10 +110,11 @@ def delete_and_send(bot, update, validationCallback, successCallback, strings):
 
     try:
         value = validationCallback(parts)
-        if not value:
+        if value is False:
             return
     except ValueError:
         bot.send_message(chat_id=update.message.from_user.id, text=strings["value_error"])
+        return
 
     db.add_to_table(strings["table_name"], update.message.from_user.id, value)
     try:
