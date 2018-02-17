@@ -156,9 +156,17 @@ def stats(bot, update):
         generate_timelog_report_from("sleep", update.message.from_user.id, duration)
         with open('./chart.png', 'rb') as photo:
             bot.send_photo(chat_id=update.message.chat_id, photo=photo)
+    elif command == "/groupstats":
+        generate_timelog_report_from("meditation", update.message.from_user.id, duration, all_data=True)
+        with open('./chart.png', 'rb') as photo:
+            bot.send_photo(chat_id=update.message.chat_id, photo=photo)
 
-def generate_timelog_report_from(table, id, days):
-    results = db.get_values(table, id, days - 1)
+def generate_timelog_report_from(table, id, days, all_data=False):
+    if all_data:
+        results = db.get_all(table)
+    else:
+        results = db.get_values(table, id, days - 1)
+
     past_week = {}
 
     for days_to_subtract in reversed(range(days)):
@@ -181,7 +189,7 @@ def generate_timelog_report_from(table, id, days):
     plt.bar(y_pos, past_week.values(), align='center', alpha=0.5)
     plt.xticks(y_pos, past_week.keys())
     plt.ylabel(ylabel)
-    plt.title(f'Last {days} days report. Total: {total} '+units)
+    plt.title('Last {} days report. Total: {} {}'.format(days, total, units))
     plt.savefig('chart.png')
     plt.close()
 
@@ -225,6 +233,7 @@ dispatcher.add_handler(CommandHandler('meditatestats', stats))
 dispatcher.add_handler(CommandHandler('sleep', sleep))
 dispatcher.add_handler(CommandHandler('sleepstats', stats))
 dispatcher.add_handler(CommandHandler('top', top))
+dispatcher.add_handler(CommandHandler('groupstats', stats))
 
 updater.start_polling()
 updater.idle()

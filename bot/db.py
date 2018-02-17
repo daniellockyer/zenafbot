@@ -72,6 +72,13 @@ def add_to_table(table, id, value):
     get_connection().commit()
     cursor.close()
 
+def get_all(table):
+    cursor = get_connection().cursor()
+    cursor.execute("SELECT value, created_at FROM "+table+" WHERE created_at > current_date - interval '7 days'")
+    results = cursor.fetchall()
+    get_connection().commit()
+    return results
+
 def get_values(table, id, days):
     cursor = get_connection().cursor()
     cursor.execute("SELECT value, created_at FROM "+table+" WHERE id = %s AND created_at > current_date - interval '%s days'", (id, days))
