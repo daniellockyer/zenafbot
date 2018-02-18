@@ -157,20 +157,15 @@ def stats(bot, update):
 
     if command == "/meditatestats":
         generate_timelog_report_from("meditation", update.message.from_user.id, duration)
-        with open('./chart.png', 'rb') as photo:
-            bot.send_photo(chat_id=update.message.chat_id, photo=photo)
     elif command == "/anxietystats":
         generate_linechart_report_from("anxiety", update.message.from_user.id, duration)
-        with open('./chart.png', 'rb') as photo:
-            bot.send_photo(chat_id=update.message.chat_id, photo=photo)
     elif command == "/sleepstats":
         generate_timelog_report_from("sleep", update.message.from_user.id, duration)
-        with open('./chart.png', 'rb') as photo:
-            bot.send_photo(chat_id=update.message.chat_id, photo=photo)
     elif command == "/groupstats":
         generate_timelog_report_from("meditation", update.message.from_user.id, duration, all_data=True)
-        with open('./chart.png', 'rb') as photo:
-            bot.send_photo(chat_id=update.message.chat_id, photo=photo)
+
+    with open('./chart.png', 'rb') as photo:
+        bot.send_photo(chat_id=update.message.chat_id, photo=photo)
 
 def generate_timelog_report_from(table, id, days, all_data=False):
     if all_data:
