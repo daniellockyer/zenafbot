@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import matplotlib.cbook as cbook
 from telegram.ext import Updater, CommandHandler
 from telegram.error import BadRequest
 import db
@@ -158,8 +160,9 @@ def stats(bot, update):
         with open('./chart.png', 'rb') as photo:
             bot.send_photo(chat_id=update.message.chat_id, photo=photo)
     elif command == "/anxietystats":
-        # TODO:
-        bot.send_message(chat_id=update.message.from_user.id, text="Working on it 🙏")
+        generate_linechart_report_from("anxiety", update.message.from_user.id, duration)
+        with open('./chart.png', 'rb') as photo:
+            bot.send_photo(chat_id=update.message.chat_id, photo=photo)
     elif command == "/sleepstats":
         generate_timelog_report_from("sleep", update.message.from_user.id, duration)
         with open('./chart.png', 'rb') as photo:
@@ -188,16 +191,34 @@ def generate_timelog_report_from(table, id, days, all_data=False):
     y_pos = np.arange(len(past_week.keys()))
 
     if table == "meditation":
-        ylabel = "Meditation"
         units = "minutes"
     elif table == "sleep":
-        ylabel = "Sleep"
         units = "hours"
 
     plt.bar(y_pos, past_week.values(), align='center', alpha=0.5)
     plt.xticks(y_pos, past_week.keys())
-    plt.ylabel(ylabel)
+    plt.ylabel(table.title())
     plt.title('Last {} days report. Total: {} {}'.format(days, total, units))
+    plt.savefig('chart.png')
+    plt.close()
+
+def generate_linechart_report_from(table, id, days):
+    results = db.get_values(table, id, days - 1)
+    ratings = [x[0] for x in results]
+    dates = [x[1] for x in results]
+    average = np.mean(ratings)
+    fig, ax = plt.subplots()
+    ax.xaxis.set_major_locator(mdates.DayLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
+
+    now = datetime.datetime.now()
+    days_ago = now - datetime.timedelta(days=days)
+    ax.set_xlim([days_ago,now])
+    ax.set_ylim([0,10])
+    plt.title('Last {} days report. Average: {:.2f}'.format(days, average))
+    plt.ylabel(table.title())
+
+    plt.plot(dates, ratings)
     plt.savefig('chart.png')
     plt.close()
 
