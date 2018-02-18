@@ -27,7 +27,7 @@ def meditate(bot, update):
             return False
         return value
 
-    def successCallback(name_to_show, value):
+    def successCallback(name_to_show, value, update):
         bot.send_message(chat_id=update.message.chat.id, text="🙏 {} meditated for {} minutes 🙏".format(name_to_show, value))
         db.increase_streak_of(update.message.from_user.id)
 
@@ -45,7 +45,7 @@ def anxiety(bot, update):
             return False
         return value
 
-    def successCallback(name_to_show, value):
+    def successCallback(name_to_show, value, update):
         if value > 7:
             em = "😥"
         elif value > 3:
@@ -53,8 +53,16 @@ def anxiety(bot, update):
         else:
             em = "😎"
 
+        # We want to find change in anxiety
+        anxiety_last_day = db.get_values("anxiety", update.message.from_user.id, 1)
+        difference_str = ""
+        if len(anxiety_last_day) > 1:
+            anxiety_last_day.sort(key=lambda r: r[1], reverse=True)
+            difference = value - anxiety_last_day[1][0]
+            difference_str = ' ({})'.format("{:+}".format(difference) if difference else "no change")
+
         bot.send_message(chat_id=update.message.chat.id,
-            text="{} {} rated their anxiety at {} {}".format(em, name_to_show, value, em))
+            text="{} {} rated their anxiety at {}{} {}".format(em, name_to_show, value, difference_str, em))
 
     delete_and_send(bot, update, validationCallback, successCallback, {
         "table_name": "anxiety",
@@ -70,7 +78,7 @@ def sleep(bot, update):
             return False
         return value
 
-    def successCallback(name_to_show, value):
+    def successCallback(name_to_show, value, update):
         bot.send_message(chat_id=update.message.chat.id, text="💤 {} slept for {} hours 💤".format(name_to_show, value))
 
     delete_and_send(bot, update, validationCallback, successCallback, {
@@ -129,7 +137,7 @@ def delete_and_send(bot, update, validationCallback, successCallback, strings):
         name_to_show = user.first_name
         if user.last_name:
             name_to_show += " " + user.last_name
-    successCallback(name_to_show, value)
+    successCallback(name_to_show, value, update)
 
 def stats(bot, update):
     db.get_or_create_user(update.message.from_user)
