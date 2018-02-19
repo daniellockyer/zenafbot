@@ -148,7 +148,7 @@ def delete_and_send(bot, update, validationCallback, successCallback, strings):
 def stats(bot, update):
     db.get_or_create_user(update.message.from_user)
     parts = update.message.text.split(' ')
-    command = parts[0]
+    command = parts[0].split("@")[0]
     duration = 7
 
     if len(parts) == 2:
