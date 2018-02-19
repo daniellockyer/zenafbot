@@ -55,7 +55,7 @@ def anxiety(bot, update):
         elif value >= 5:
             em = "😐"
         elif value >= 3:
-            em = "😐"
+            em = "🙂"
         else:
             em = "😎"
 
