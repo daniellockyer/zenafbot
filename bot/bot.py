@@ -48,9 +48,13 @@ def anxiety(bot, update):
         return value
 
     def successCallback(name_to_show, value, update):
-        if value > 7:
-            em = "😥"
-        elif value > 3:
+        if value >= 9:
+            em = "😭"
+        elif value >= 7:
+            em = "😦"
+        elif value >= 5:
+            em = "😐"
+        elif value >= 3:
             em = "😐"
         else:
             em = "😎"
