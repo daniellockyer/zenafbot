@@ -173,7 +173,7 @@ def stats(bot, update):
 
 def generate_timelog_report_from(table, id, days, all_data=False):
     if all_data:
-        results = db.get_all(table)
+        results = db.get_all(table, days - 1)
     else:
         results = db.get_values(table, id, days - 1)
 
