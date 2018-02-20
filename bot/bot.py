@@ -30,7 +30,7 @@ def meditate(bot, update):
         return value
 
     def successCallback(name_to_show, value, update):
-        bot.send_message(chat_id=update.message.chat.id, text="🙏 {} meditated for {} minutes 🙏".format(name_to_show, value))
+        bot.send_message(chat_id=update.message.from_user.id, text="🙏 You meditated for {} minutes 🙏".format(name_to_show, value))
         db.increase_streak_of(update.message.from_user.id)
 
     delete_and_send(bot, update, validationCallback, successCallback, {
@@ -81,7 +81,7 @@ def sleep(bot, update):
         return value
 
     def successCallback(name_to_show, value, update):
-        bot.send_message(chat_id=update.message.chat.id, text="💤 {} slept for {} hours 💤".format(name_to_show, value))
+        bot.send_message(chat_id=update.message.from_user.id, text="💤 You slept for {} hours 💤".format(name_to_show, value))
 
     delete_and_send(bot, update, validationCallback, successCallback, {
         "table_name": "sleep",
