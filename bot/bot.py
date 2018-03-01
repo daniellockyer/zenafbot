@@ -80,7 +80,7 @@ def anxiety(bot, update):
 def happiness(bot,update):
     def validationCallback(parts):
         value = int(parts[1])
-        if value < 0 or value > 10
+        if value < 0 or value > 10:
             bot.send_message(chat_id=update.message.chat.id, text="Please rate your happiness level 0-10")
             return False
         return value
