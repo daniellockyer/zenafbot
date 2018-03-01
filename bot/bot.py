@@ -76,6 +76,40 @@ def anxiety(bot, update):
         "value_error": "You need to specify the value as a number."
     })
 
+        #adding a happiness command
+def happiness(bot,update):
+    def validationCallback(parts):
+        value = int(parts[1])
+        if value < 0 or value > 10
+            bot.send_message(chat_id=update.message.chat.id, text="Please rate your happiness level 0-10")
+            return False
+        return value
+
+    def successCallback(name_to_show, value, update):
+        if value > 7:
+            em = "😎"
+        elif value > 3:
+            em = "😐"
+        else:
+            em = "😥"
+
+        # We want to find change in happiness
+        happiness_last_day = db.get_values("happiness", update.message.from_user.id, 1)
+        difference_str = ""
+        if len(happiness_last_day) > 1:
+            happiness_last_day.sort(key=lambda r: r[1], reverse=True)
+            difference = value - happiness_last_day[1][0]
+            difference_str = ' ({})'.format("{:+}".format(difference) if difference else "no change")
+
+        bot.send_message(chat_id=update.message.chat.id,
+            text="{} {} rated their happiness at {}{} {}".format(em, name_to_show, value, difference_str, em))
+
+        delete_and_send(bot, update, validationCallback, successCallback), {
+        "table_name": "happiness",
+        "wrong_length": "Please rate your happiness level between 0-10",
+        "value_error": "You need to specify the value as a decimal number (eg. 7.5)"
+    })
+
 def sleep(bot, update):
     def validationCallback(parts):
         value = float(parts[1])
@@ -251,6 +285,12 @@ cursor.execute("CREATE TABLE IF NOT EXISTS sleep(\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
+cursor.execute("CREATE TABLE IF NOT EXISTS happiness(\
+    id INTEGER NOT NULL REFERENCES users(id),\
+    value INTEGER NOT NULL,\
+    created_at TIMESTAMP NOT NULL DEFAULT now()\
+);")
+
 db.get_connection().commit()
 cursor.close()
 
@@ -262,6 +302,7 @@ dispatcher.add_handler(CommandHandler('sleep', sleep))
 dispatcher.add_handler(CommandHandler('sleepstats', stats))
 dispatcher.add_handler(CommandHandler('top', top))
 dispatcher.add_handler(CommandHandler('groupstats', stats))
+dispatcher.add_handler(CommandHandler('happiness', happiness))
 
 updater.start_polling()
 updater.idle()
