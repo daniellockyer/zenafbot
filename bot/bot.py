@@ -86,12 +86,20 @@ def happiness(bot,update):
         return value
 
     def successCallback(name_to_show, value, update):
-        if value > 7:
+        if value >= 9:
             em = "😎"
-        elif value > 3:
+        elif value >= 7:
+            em = "😄"
+        elif value >= 5:
+            em = "🙂"
+        elif value >= 4:
             em = "😐"
+        elif value >= 3:
+            em = "😕"
+        elif value >= 1:
+            em = "😦"
         else:
-            em = "😥"
+            em = "😭"
 
         # We want to find change in happiness
         happiness_last_day = db.get_values("happiness", update.message.from_user.id, 1)
