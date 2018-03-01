@@ -308,7 +308,7 @@ dispatcher.add_handler(CommandHandler('groupstats', stats))
 dispatcher.add_handler(CommandHandler('happiness', happiness))
 # Next two are synonyms as 'happinessstats' is weird AF
 dispatcher.add_handler(CommandHandler('happystats', stats))
-dispatcher.add_handler(CommandHandler('happinessstats', stats)
+dispatcher.add_handler(CommandHandler('happinessstats', stats))
 
 updater.start_polling()
 updater.idle()
