@@ -104,7 +104,7 @@ def happiness(bot,update):
         bot.send_message(chat_id=update.message.chat.id,
             text="{} {} rated their happiness at {}{} {}".format(em, name_to_show, value, difference_str, em))
 
-    delete_and_send(bot, update, validationCallback, successCallback), {
+    delete_and_send(bot, update, validationCallback, successCallback, {
         "table_name": "happiness",
         "wrong_length": "Please rate your happiness level between 0-10",
         "value_error": "You need to specify the value as a decimal number (eg. 7.5)"
