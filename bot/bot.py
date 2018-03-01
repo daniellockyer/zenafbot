@@ -201,6 +201,9 @@ def stats(bot, update):
         generate_timelog_report_from("sleep", update.message.from_user.id, duration)
     elif command == "/groupstats":
         generate_timelog_report_from("meditation", update.message.from_user.id, duration, all_data=True)
+    # synonyms as 'happinessstats' is weird AF
+    elif command == "/happinessstats" or command == "/happystats":
+        generate_linechart_report_from("happiness", update.message.from_user.id, duration)
 
     with open('./chart.png', 'rb') as photo:
         bot.send_photo(chat_id=update.message.chat_id, photo=photo)
@@ -303,6 +306,9 @@ dispatcher.add_handler(CommandHandler('sleepstats', stats))
 dispatcher.add_handler(CommandHandler('top', top))
 dispatcher.add_handler(CommandHandler('groupstats', stats))
 dispatcher.add_handler(CommandHandler('happiness', happiness))
+# Next two are synonyms as 'happinessstats' is weird AF
+dispatcher.add_handler(CommandHandler('happystats', stats))
+dispatcher.add_handler(CommandHandler('happinessstats', stats)
 
 updater.start_polling()
 updater.idle()
