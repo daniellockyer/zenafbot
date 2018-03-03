@@ -220,6 +220,11 @@ def stats(bot, update):
     elif command == "/happinessstats" or command == "/happystats":
         generate_linechart_report_from("happiness", filename, user, duration)
 
+    try:
+        bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
+    except BadRequest:
+        pass
+
     with open(filename, 'rb') as photo:
         bot.send_photo(chat_id=update.message.chat_id, photo=photo)
     #Telegram API is synchronous, so it's OK to clean up now!
