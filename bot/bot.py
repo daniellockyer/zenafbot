@@ -11,6 +11,7 @@ import db
 import logging
 import datetime
 import os
+from collections import defaultdict
 
 TOKEN = os.environ.get('BOT_TOKEN', None)
 if TOKEN is None:
@@ -222,25 +223,29 @@ def generate_timelog_report_from(table, id, days, all_data=False):
     else:
         results = db.get_values(table, id, days - 1)
 
-    past_week = {}
-
-    for days_to_subtract in reversed(range(days)):
-        d = datetime.datetime.today() - datetime.timedelta(days=days_to_subtract)
-        past_week[d.day] = 0
-
+    dates_to_value_mapping = defaultdict(int)
     for result in results:
-        past_week[result[1].day] += result[0]
+        dates_to_value_mapping[result[1].date()] += result[0]
 
-    total = sum(past_week.values())
-    y_pos = np.arange(len(past_week.keys()))
+    dates = dates_to_value_mapping.keys()
+    values = dates_to_value_mapping.values()
+    total = sum(values)
 
     if table == "meditation":
         units = "minutes"
     elif table == "sleep":
         units = "hours"
 
-    plt.bar(y_pos, past_week.values(), align='center', alpha=0.5)
-    plt.xticks(y_pos, past_week.keys())
+    #Give the x axis correct scale
+    fig, ax = plt.subplots()
+    ax.xaxis.set_major_locator(mdates.DayLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
+    now = datetime.datetime.now()
+    days_ago = now - datetime.timedelta(days=days)
+    ax.set_xlim([days_ago,now])
+    ax.xaxis_date()
+
+    plt.bar(dates, values, align='center', alpha=0.5)
     plt.ylabel(table.title())
     plt.title('Last {} days report. Total: {} {}'.format(days, total, units))
     plt.savefig('chart.png')
