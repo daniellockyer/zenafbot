@@ -11,6 +11,7 @@ import db
 import logging
 import datetime
 import os
+from collections import defaultdict
 
 TOKEN = os.environ.get('BOT_TOKEN', None)
 if TOKEN is None:
@@ -179,19 +180,24 @@ def delete_and_send(bot, update, validationCallback, successCallback, strings):
         pass
 
     user = update.message.from_user
+    name_to_show = get_name(user)
+    successCallback(name_to_show, value, update)
+
+def get_name(user):
     if user.username:
         name_to_show = "@" + user.username
     else:
         name_to_show = user.first_name
         if user.last_name:
             name_to_show += " " + user.last_name
-    successCallback(name_to_show, value, update)
+    return name_to_show
 
 def stats(bot, update):
     db.get_or_create_user(update.message.from_user)
     parts = update.message.text.split(' ')
     command = parts[0].split("@")[0]
     duration = 7
+    user = update.message.from_user
 
     if len(parts) == 2:
         if parts[1] == 'weekly':
@@ -201,52 +207,64 @@ def stats(bot, update):
         elif parts[1] == 'monthly':
             duration = 30
 
+    filename = "./{}-chart.png".format(user.id)
     if command == "/meditatestats":
-        generate_timelog_report_from("meditation", update.message.from_user.id, duration)
+        generate_timelog_report_from("meditation", filename, user, duration)
     elif command == "/anxietystats":
-        generate_linechart_report_from("anxiety", update.message.from_user.id, duration)
+        generate_linechart_report_from("anxiety", filename, user, duration)
     elif command == "/sleepstats":
-        generate_timelog_report_from("sleep", update.message.from_user.id, duration)
+        generate_timelog_report_from("sleep", filename, user, duration)
     elif command == "/groupstats":
-        generate_timelog_report_from("meditation", update.message.from_user.id, duration, all_data=True)
+        generate_timelog_report_from("meditation", filename, user, duration, all_data=True)
     # synonyms as 'happinessstats' is weird AF
     elif command == "/happinessstats" or command == "/happystats":
-        generate_linechart_report_from("happiness", update.message.from_user.id, duration)
+        generate_linechart_report_from("happiness", filename, user, duration)
 
-    with open('./chart.png', 'rb') as photo:
+    with open(filename, 'rb') as photo:
         bot.send_photo(chat_id=update.message.chat_id, photo=photo)
+    #Telegram API is synchronous, so it's OK to clean up now!
+    os.remove(filename)
 
-def generate_timelog_report_from(table, id, days, all_data=False):
+def generate_timelog_report_from(table, filename, user, days, all_data=False):
+    id = user.id
     if all_data:
         results = db.get_all(table, days - 1)
+        username = "Group"
     else:
         results = db.get_values(table, id, days - 1)
+        username = get_name(user)
 
-    past_week = {}
-
-    for days_to_subtract in reversed(range(days)):
-        d = datetime.datetime.today() - datetime.timedelta(days=days_to_subtract)
-        past_week[d.day] = 0
-
+    dates_to_value_mapping = defaultdict(int)
     for result in results:
-        past_week[result[1].day] += result[0]
+        dates_to_value_mapping[result[1].date()] += result[0]
 
-    total = sum(past_week.values())
-    y_pos = np.arange(len(past_week.keys()))
+    dates = dates_to_value_mapping.keys()
+    values = dates_to_value_mapping.values()
+    total = sum(values)
 
     if table == "meditation":
         units = "minutes"
     elif table == "sleep":
         units = "hours"
 
-    plt.bar(y_pos, past_week.values(), align='center', alpha=0.5)
-    plt.xticks(y_pos, past_week.keys())
+    #Give the x axis correct scale
+    fig, ax = plt.subplots()
+    ax.xaxis.set_major_locator(mdates.DayLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
+    now = datetime.datetime.now()
+    days_ago = now - datetime.timedelta(days=days)
+    ax.set_xlim([days_ago,now])
+    ax.xaxis_date()
+
+    plt.bar(dates, values, align='center', alpha=0.5)
     plt.ylabel(table.title())
-    plt.title('Last {} days report. Total: {} {}'.format(days, total, units))
-    plt.savefig('chart.png')
+    plt.title('{}\'s {} chart\nLast {} days report. Total: {} {}'.format(username, table, days, total, units))
+    plt.savefig(filename)
     plt.close()
 
-def generate_linechart_report_from(table, id, days):
+def generate_linechart_report_from(table, filename, user, days):
+    username = get_name(user)
+    id = user.id
     results = db.get_values(table, id, days - 1)
     ratings = [x[0] for x in results]
     dates = [x[1] for x in results]
@@ -259,11 +277,11 @@ def generate_linechart_report_from(table, id, days):
     days_ago = now - datetime.timedelta(days=days)
     ax.set_xlim([days_ago,now])
     ax.set_ylim([0,10])
-    plt.title('Last {} days report. Average: {:.2f}'.format(days, average))
+    plt.title('{}\'s {} chart\nLast {} days report. Average: {:.2f}'.format(username, table, days, average))
     plt.ylabel(table.title())
 
     plt.plot(dates, ratings)
-    plt.savefig('chart.png')
+    plt.savefig(filename)
     plt.close()
 
 #######################################################################################
