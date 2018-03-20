@@ -23,7 +23,7 @@ dispatcher = updater.dispatcher
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 def pm(bot, update):
-    user = get_or_create_user(update)
+    user = get_or_create_user(bot, update)
     has_pm_bot = user[5]
     if has_pm_bot is True:
         bot.send_message(chat_id=update.message.from_user.id, text="Sorry, I didn't understand that!")
@@ -149,7 +149,7 @@ def sleep(bot, update):
     })
 
 def top(bot, update):
-    get_or_create_user(update)
+    get_or_create_user(bot, update)
     top_users = db.get_top(5)
     line = []
     for i, user in enumerate(top_users):
@@ -171,7 +171,7 @@ def top(bot, update):
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
 def delete_and_send(bot, update, validationCallback, successCallback, strings):
-    get_or_create_user(update)
+    get_or_create_user(bot, update)
     parts = update.message.text.split(' ')
     if len(parts) < 2:
         bot.send_message(chat_id=update.message.from_user.id, text=strings["wrong_length"])
@@ -195,7 +195,7 @@ def delete_and_send(bot, update, validationCallback, successCallback, strings):
     name_to_show = get_name(user)
     successCallback(name_to_show, value, update)
 
-def get_or_create_user(update):
+def get_or_create_user(bot, update):
     user = update.message.from_user
     cursor = db.get_connection().cursor()
 
@@ -235,7 +235,7 @@ def get_name(user):
     return name_to_show
 
 def stats(bot, update):
-    get_or_create_user(update)
+    get_or_create_user(bot, update)
     parts = update.message.text.split(' ')
     command = parts[0].split("@")[0]
     duration = 7
