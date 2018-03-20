@@ -7,7 +7,7 @@ import matplotlib.cbook as cbook
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram.error import BadRequest
 import db
-
+import dateparser
 import logging
 import datetime
 import os
@@ -147,6 +147,45 @@ def sleep(bot, update):
         "wrong_length": "💤 Please give how many hours you slept. 💤",
         "value_error": "💤 You need to specify the value as a decimal number (eg. 7.5) 💤"
     })
+
+#Add an entry to your journal
+def journaladd(bot, update):
+
+    def validationCallback(parts):
+        #String will always fit in db as db stores as much as max length for telegram message
+        del parts[0]
+        journalentry = " ".join(parts)
+        if len(journalentry) == 0 or len(journalentry) > 4000:
+            bot.send_message(chat_id=update.message.from_user.id, text="✏️ Please give a journal entry between 0 and 4000 characters! ✏️")
+            return False
+        return journalentry
+
+    def successCallback(name_to_show, value, update):
+        bot.send_message(chat_id=update.message.chat.id, text="✏️ {} logged a journal entry! ✏️".format(name_to_show))
+
+    delete_and_send(bot, update, validationCallback, successCallback, {
+        "table_name": "journal",
+        "wrong_length": "✏️ Please give a journal entry. ✏️",
+        "value_error": "✏️ Please give a valid journal entry. ✏️" #Don't think this one will trigger
+    })
+
+#Recall entries from your journal for a particular day
+def journallookup(bot, update):
+    username = get_name(update.message.from_user)
+    parts = update.message.text.split(' ')
+    del parts[0]
+    datestring = " ".join(parts)
+    
+    #Parse the string - prefer DMY to MDY - most of world uses DMY
+    dateinfo = dateparser.parse(datestring, settings={'DATE_ORDER': 'DMY', 'STRICT_PARSING': True})
+    if dateinfo is not None:
+        dateinfo = dateinfo.date()
+        entries = db.get_dated_values("journal", update.message.from_user.id, dateinfo)
+        for entry in entries:
+            #Seperate entry for each message, or we'll hit the telegram length limit for many (or just a few long ones) in one day
+            bot.send_message(chat_id=update.message.chat.id, text="📓 Journal entry by {}, dated {}: {}".format(username, entry[1].strftime("%a. %d %B %Y %I:%M%p %Z"), entry[0]))
+    else:
+        bot.send_message(chat_id=update.message.chat.id, text="Sorry, I couldn't understand that date format. 🤔")
 
 def top(bot, update):
     get_or_create_user(bot, update)
@@ -368,6 +407,15 @@ cursor.execute("CREATE TABLE IF NOT EXISTS happiness(\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
+# 4096 is max length of a telegram message;
+# We should store 4000 to give us some room when sending the user a
+# journal message they have recalled.
+cursor.execute("CREATE TABLE IF NOT EXISTS journal(\
+    id INTEGER NOT NULL REFERENCES users(id),\
+    value varchar(4096) NOT NULL,\
+    created_at TIMESTAMP NOT NULL DEFAULT now()\
+);")
+
 db.get_connection().commit()
 cursor.close()
 
@@ -383,6 +431,8 @@ dispatcher.add_handler(CommandHandler('happiness', happiness))
 # Next two are synonyms as 'happinessstats' is weird AF
 dispatcher.add_handler(CommandHandler('happystats', stats))
 dispatcher.add_handler(CommandHandler('happinessstats', stats))
+dispatcher.add_handler(CommandHandler('journal', journaladd))
+dispatcher.add_handler(CommandHandler('journalentries', journallookup))
 # Respond to private messages
 dispatcher.add_handler(MessageHandler(Filters.private, pm))
 

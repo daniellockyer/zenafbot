@@ -69,3 +69,10 @@ def get_values(table, id, days):
     results = cursor.fetchall()
     get_connection().commit()
     return results
+
+def get_dated_values(table, id, date):
+    cursor = get_connection().cursor()
+    cursor.execute("SELECT value, created_at FROM "+table+" WHERE id = %s AND created_at::date = %s", (id, date))
+    results = cursor.fetchall()
+    get_connection().commit()
+    return results
