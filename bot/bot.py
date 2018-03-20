@@ -4,7 +4,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.cbook as cbook
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram.error import BadRequest
 import db
 
@@ -21,6 +21,18 @@ updater = Updater(token=TOKEN)
 dispatcher = updater.dispatcher
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+def pm(bot, update):
+    user = get_or_create_user(update)
+    has_pm_bot = user[5]
+    if has_pm_bot is True:
+        bot.send_message(chat_id=update.message.from_user.id, text="Sorry, I didn't understand that!")
+    else:
+        db.set_has_pmed(update.message.from_user.id)
+        bot.send_message(chat_id=update.message.from_user.id, text="Thanks for PMing me! 👋 Now I can PM you too! " \
+            "📨 Please don't delete this chat or I won't be able PM you anymore. 😢 " \
+            "Any command that you can perform with me in the Mindful Makers channel can also be ran here! " \
+            "That way you can keep things private with me! 💖")
 
 def meditate(bot, update):
     def validationCallback(parts):
@@ -137,7 +149,7 @@ def sleep(bot, update):
     })
 
 def top(bot, update):
-    db.get_or_create_user(update.message.from_user)
+    get_or_create_user(update)
     top_users = db.get_top(5)
     line = []
     for i, user in enumerate(top_users):
@@ -159,7 +171,7 @@ def top(bot, update):
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
 def delete_and_send(bot, update, validationCallback, successCallback, strings):
-    db.get_or_create_user(update.message.from_user)
+    get_or_create_user(update)
     parts = update.message.text.split(' ')
     if len(parts) < 2:
         bot.send_message(chat_id=update.message.from_user.id, text=strings["wrong_length"])
@@ -183,6 +195,36 @@ def delete_and_send(bot, update, validationCallback, successCallback, strings):
     name_to_show = get_name(user)
     successCallback(name_to_show, value, update)
 
+def get_or_create_user(update):
+    user = update.message.from_user
+    cursor = db.get_connection().cursor()
+
+    cursor.execute('SELECT * FROM users WHERE id = %s', (user.id,))
+    result = cursor.fetchone()
+
+    if result is None:
+        values = []
+        for attribute in ['id', 'first_name', 'last_name', 'username']:
+            value = getattr(user, attribute, None)
+            values.append(value)
+
+        # If command was run in public, ask them to PM us!
+        if update.message.chat_id is not update.message.from_user.id:
+            bot.send_message(chat_id=update.message.chat_id, text="Hey {}! Please message me at @zenafbot so that I can PM you!".format(get_name(user)))
+            values.append(False)
+        else:
+            values.append(True)
+
+        cursor.execute("INSERT INTO users(id, first_name, last_name, username, haspm) VALUES (%s, %s, %s, %s, %s)", values)
+
+        cursor.execute('SELECT * FROM users WHERE id = %s', (user.id,))
+        result = cursor.fetchone()
+
+
+    db.get_connection().commit()
+    cursor.close()
+    return result
+
 def get_name(user):
     if user.username:
         name_to_show = "@" + user.username
@@ -193,7 +235,7 @@ def get_name(user):
     return name_to_show
 
 def stats(bot, update):
-    db.get_or_create_user(update.message.from_user)
+    get_or_create_user(update)
     parts = update.message.text.split(' ')
     command = parts[0].split("@")[0]
     duration = 7
@@ -298,7 +340,8 @@ cursor.execute("CREATE TABLE IF NOT EXISTS users(\
     first_name text NOT NULL,\
     last_name text,\
     username text,\
-    streak INTEGER NOT NULL DEFAULT 0\
+    streak INTEGER NOT NULL DEFAULT 0,\
+    haspm boolean DEFAULT FALSE\
 );")
 
 cursor.execute("CREATE TABLE IF NOT EXISTS meditation(\
@@ -340,6 +383,8 @@ dispatcher.add_handler(CommandHandler('happiness', happiness))
 # Next two are synonyms as 'happinessstats' is weird AF
 dispatcher.add_handler(CommandHandler('happystats', stats))
 dispatcher.add_handler(CommandHandler('happinessstats', stats))
+# Respond to private messages
+dispatcher.add_handler(MessageHandler(Filters.private, pm))
 
 updater.start_polling()
 updater.idle()

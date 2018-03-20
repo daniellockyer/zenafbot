@@ -21,27 +21,11 @@ def get_connection():
 
     return CONNECTION
 
-def get_or_create_user(user):
+def set_has_pmed(id):
     cursor = get_connection().cursor()
-
-    cursor.execute('SELECT * FROM users WHERE id = %s', (user.id,))
-    result = cursor.fetchone()
-
-    if result is None:
-        values = []
-        for attribute in ['id', 'first_name', 'last_name', 'username']:
-            value = getattr(user, attribute, None)
-            values.append(value)
-
-        cursor.execute("INSERT INTO users(id, first_name, last_name, username) VALUES (%s, %s, %s, %s)", values)
-
-        cursor.execute('SELECT * FROM users WHERE id = %s', (user.id,))
-        result = cursor.fetchone()
-
+    cursor.execute('UPDATE users SET haspm = TRUE WHERE id = %s', (id,))
     get_connection().commit()
     cursor.close()
-
-    return result
 
 def increase_streak_of(id):
     cursor = get_connection().cursor()
