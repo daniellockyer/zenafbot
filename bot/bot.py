@@ -168,6 +168,7 @@ def journaladd(bot, update):
 
 #Recall entries from your journal for a particular day
 def journallookup(bot, update):
+    user_id = update.message.from_user.id
     username = get_name(update.message.from_user)
     parts = update.message.text.split(' ')
     del parts[0]
@@ -177,7 +178,9 @@ def journallookup(bot, update):
     dateinfo = dateparser.parse(datestring, settings={'DATE_ORDER': 'DMY', 'STRICT_PARSING': True})
     if dateinfo is not None:
         dateinfo = dateinfo.date()
-        entries = db.get_dated_values("journal", update.message.from_user.id, dateinfo)
+        start_of_day = datetime.datetime(dateinfo.year, dateinfo.month, dateinfo.day)
+        end_of_day = start_of_day + datetime.timedelta(days=1)
+        entries = db.get_values("journal", start_date=start_of_day, end_date=end_of_day, user_id=user_id)
 
         try:
             bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
@@ -277,6 +280,9 @@ def get_name(user):
         name_to_show = user.full_name
     return name_to_show
 
+def get_x_days_before(start_date, days_before):
+    return start_date - datetime.timedelta(days=days_before)
+
 def stats(bot, update):
     get_or_create_user(bot, update)
     parts = update.message.text.split(' ')
@@ -284,26 +290,33 @@ def stats(bot, update):
     duration = 7
     user = update.message.from_user
 
+    now = datetime.datetime.now()
     if len(parts) == 2:
         if parts[1] == 'weekly':
-            duration = 7
+            start_date = get_x_days_before(now, 7)
         elif parts[1] == 'biweekly':
-            duration = 14
+            start_date = get_x_days_before(now, 14)
         elif parts[1] == 'monthly':
-            duration = 30
+            start_date = get_x_days_before(now, 31)
+        elif parts[1] == 'all':
+            #Unbounded search for all dates
+            start_date = None
+    else:
+        #Default to a week ago
+        start_date = get_x_days_before(now, 7)
 
     filename = "./{}-chart.png".format(user.id)
     if command == "/meditatestats":
-        generate_timelog_report_from("meditation", filename, user, duration)
+        generate_timelog_report_from("meditation", filename, user, start_date, now)
     elif command == "/anxietystats":
-        generate_linechart_report_from("anxiety", filename, user, duration)
+        generate_linechart_report_from("anxiety", filename, user, start_date, now)
     elif command == "/sleepstats":
-        generate_timelog_report_from("sleep", filename, user, duration)
+        generate_timelog_report_from("sleep", filename, user, start_date, now)
     elif command == "/groupstats":
-        generate_timelog_report_from("meditation", filename, user, duration, all_data=True)
+        generate_timelog_report_from("meditation", filename, user, start_date, now, all_data=True)
     # synonyms as 'happinessstats' is weird AF
     elif command == "/happinessstats" or command == "/happystats":
-        generate_linechart_report_from("happiness", filename, user, duration)
+        generate_linechart_report_from("happiness", filename, user, start_date, now)
 
     try:
         bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
@@ -315,14 +328,18 @@ def stats(bot, update):
     #Telegram API is synchronous, so it's OK to clean up now!
     os.remove(filename)
 
-def generate_timelog_report_from(table, filename, user, days, all_data=False):
-    id = user.id
-    if all_data:
-        results = db.get_all(table, days - 1)
-        username = "Group"
-    else:
-        results = db.get_values(table, id, days - 1)
-        username = get_name(user)
+def get_chart_x_limits(start_date, end_date, dates):
+    #Limits are difficult as start_date or end_date are allowed to be None
+    #So set limit based on those if set, otherwise based on returned earliest/latest in data
+    sorted_dates = sorted(dates)
+    lower_limit = start_date if start_date else sorted_dates[0]
+    upper_limit = end_date if end_date else sorted_dates[-1]
+    return [lower_limit, upper_limit]
+
+def generate_timelog_report_from(table, filename, user, start_date, end_date, all_data=False):
+    user_id = None if all_data else user.id
+    username = "Group" if all_data else get_name(user)
+    results = db.get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
 
     dates_to_value_mapping = defaultdict(int)
     for result in results:
@@ -341,33 +358,37 @@ def generate_timelog_report_from(table, filename, user, days, all_data=False):
     fig, ax = plt.subplots()
     ax.xaxis.set_major_locator(mdates.DayLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
-    now = datetime.datetime.now()
-    days_ago = now - datetime.timedelta(days=days)
-    ax.set_xlim([days_ago,now])
+
+    x_limits = get_chart_x_limits(start_date, end_date, dates)
+    ax.set_xlim(x_limits)
     ax.xaxis_date()
 
     plt.bar(dates, values, align='center', alpha=0.5)
     plt.ylabel(table.title())
-    plt.title('{}\'s {} chart\nLast {} days report. Total: {} {}'.format(username, table, days, total, units))
+    interval = x_limits[1] - x_limits[0]
+    plt.title('{}\'s {} chart\n{} days report. Total: {:.1f} {}'.format(username, table, interval, total, units))
     plt.savefig(filename)
     plt.close()
 
-def generate_linechart_report_from(table, filename, user, days):
+def generate_linechart_report_from(table, filename, user, start_date, end_date):
+    user_id = user.id
     username = get_name(user)
-    id = user.id
-    results = db.get_values(table, id, days - 1)
+    results = db.get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
+
     ratings = [x[0] for x in results]
     dates = [x[1] for x in results]
     average = float(sum(ratings)) / max(len(ratings), 1)
+
     fig, ax = plt.subplots()
     ax.xaxis.set_major_locator(mdates.DayLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
 
-    now = datetime.datetime.now()
-    days_ago = now - datetime.timedelta(days=days)
-    ax.set_xlim([days_ago,now])
+    x_limits = get_chart_x_limits(start_date, end_date, dates)
+    ax.set_xlim(x_limits)
     ax.set_ylim([0,10])
-    plt.title('{}\'s {} chart\nLast {} days report. Average: {:.2f}'.format(username, table, days, average))
+
+    interval = x_limits[1] - x_limits[0]
+    plt.title('{}\'s {} chart\n{} days report. Average: {:.2f}'.format(username, table, interval, average))
     plt.ylabel(table.title())
 
     plt.plot(dates, ratings)
