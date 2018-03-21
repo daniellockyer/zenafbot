@@ -1,6 +1,6 @@
+import os
 import psycopg2
 from psycopg2 import sql
-import os
 
 CONNECTION = None
 DB_NAME = os.environ.get('DB_NAME', 'zenirlbot')

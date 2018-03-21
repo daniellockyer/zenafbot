@@ -1,17 +1,18 @@
+from collections import defaultdict
+import datetime
+import logging
+import math
+import os
+
+import dateparser
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import matplotlib.cbook as cbook
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram.error import BadRequest
+
 import db
-import dateparser
-import logging
-import datetime
-import math
-import os
-from collections import defaultdict
 
 TOKEN = os.environ.get('BOT_TOKEN', None)
 if TOKEN is None:
@@ -81,7 +82,7 @@ def anxiety(bot, update):
             difference_str = ' ({})'.format("{:+}".format(difference) if difference else "no change")
 
         bot.send_message(chat_id=update.message.chat.id,
-            text="{} {} rated their anxiety at {}{} {}".format(em, name_to_show, value, difference_str, em))
+                         text="{} {} rated their anxiety at {}{} {}".format(em, name_to_show, value, difference_str, em))
 
     delete_and_send(bot, update, validationCallback, successCallback, {
         "table_name": "anxiety",
@@ -89,7 +90,7 @@ def anxiety(bot, update):
         "value_error": "You need to specify the value as a number."
     })
 
-def happiness(bot,update):
+def happiness(bot, update):
     def validationCallback(parts):
         value = int(parts[1])
         if value < 0 or value > 10:
@@ -122,7 +123,7 @@ def happiness(bot,update):
             difference_str = ' ({})'.format("{:+}".format(difference) if difference else "no change")
 
         bot.send_message(chat_id=update.message.chat.id,
-            text="{} {} rated their happiness at {}{} {}".format(em, name_to_show, value, difference_str, em))
+                         text="{} {} rated their happiness at {}{} {}".format(em, name_to_show, value, difference_str, em))
 
     delete_and_send(bot, update, validationCallback, successCallback, {
         "table_name": "happiness",
@@ -158,7 +159,7 @@ def journaladd(bot, update):
             return False
         return journalentry
 
-    def successCallback(name_to_show, value, update):
+    def successCallback(name_to_show, _, update):
         bot.send_message(chat_id=update.message.chat.id, text="✏️ {} logged a journal entry! ✏️".format(name_to_show))
 
     delete_and_send(bot, update, validationCallback, successCallback, {
@@ -355,7 +356,7 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
     elif table == "sleep":
         units = "hours"
 
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
 
     x_limits = get_chart_x_limits(start_date, end_date, dates)
     ax.set_xlim(x_limits)
@@ -385,11 +386,11 @@ def generate_linechart_report_from(table, filename, user, start_date, end_date):
     dates = [x[1] for x in results]
     average = float(sum(ratings)) / max(len(ratings), 1)
 
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
 
     x_limits = get_chart_x_limits(start_date, end_date, [x.date() for x in dates])
     ax.set_xlim(x_limits)
-    ax.set_ylim([0,10])
+    ax.set_ylim([0, 10])
 
     interval = (x_limits[1] - x_limits[0]).days
     #Try to keep the ticks on the x axis readable by limiting to max of 25
