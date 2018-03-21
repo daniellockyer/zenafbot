@@ -1,4 +1,5 @@
 import psycopg2
+from psycopg2.sql import Identifier, SQL
 import os
 
 CONNECTION = None
@@ -52,27 +53,17 @@ def get_top(n):
 
 def add_to_table(table, id, value):
     cursor = get_connection().cursor()
-    cursor.execute("INSERT INTO "+table+"(id, value) VALUES (%s, %s)", (id, value))
+    cursor.execute(SQL("INSERT INTO {} (id, value) VALUES (%s, %s)".format(Identifier(table))), (id, value))
     get_connection().commit()
     cursor.close()
 
-def get_all(table, days):
+def get_values(table, start_date=None, end_date=None, user_id=None):
     cursor = get_connection().cursor()
-    cursor.execute("SELECT value, created_at FROM "+table+" WHERE created_at > current_date - interval '%s days'", (days,))
-    results = cursor.fetchall()
-    get_connection().commit()
-    return results
-
-def get_values(table, id, days):
-    cursor = get_connection().cursor()
-    cursor.execute("SELECT value, created_at FROM "+table+" WHERE id = %s AND created_at > current_date - interval '%s days'", (id, days))
-    results = cursor.fetchall()
-    get_connection().commit()
-    return results
-
-def get_dated_values(table, id, date):
-    cursor = get_connection().cursor()
-    cursor.execute("SELECT value, created_at FROM "+table+" WHERE id = %s AND created_at::date = %s", (id, date))
+    query = SQL("SELECT value, created_at FROM {} WHERE "\
+                    "(%s is NULL OR id = %s) "\
+                "AND (%s is NULL OR created_at > %s) "\
+                "AND (%s is NULL OR created_at < %s);".format(Identifier(table)))
+    cursor.execute(query, (user_id, user_id, start_date, start_date, end_date, end_date))
     results = cursor.fetchall()
     get_connection().commit()
     return results
