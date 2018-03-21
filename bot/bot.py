@@ -88,7 +88,6 @@ def anxiety(bot, update):
         "value_error": "You need to specify the value as a number."
     })
 
-        #adding a happiness command
 def happiness(bot,update):
     def validationCallback(parts):
         value = int(parts[1])
@@ -149,7 +148,6 @@ def sleep(bot, update):
 
 #Add an entry to your journal
 def journaladd(bot, update):
-
     def validationCallback(parts):
         #String will always fit in db as db stores as much as max length for telegram message
         del parts[0]
