@@ -1,5 +1,5 @@
 import psycopg2
-from psycopg2.sql import Identifier, SQL
+from psycopg2 import sql
 import os
 
 CONNECTION = None
@@ -59,10 +59,10 @@ def add_to_table(table, id, value):
 
 def get_values(table, start_date=None, end_date=None, user_id=None):
     cursor = get_connection().cursor()
-    query = SQL("SELECT value, created_at FROM {} WHERE "\
+    query = sql.SQL("SELECT value, created_at FROM {} WHERE "\
                     "(%s is NULL OR id = %s) "\
                 "AND (%s is NULL OR created_at > %s) "\
-                "AND (%s is NULL OR created_at < %s);".format(Identifier(table)))
+                "AND (%s is NULL OR created_at < %s);").format(sql.Identifier(table))
     cursor.execute(query, (user_id, user_id, start_date, start_date, end_date, end_date))
     results = cursor.fetchall()
     get_connection().commit()
