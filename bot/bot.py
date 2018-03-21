@@ -174,12 +174,18 @@ def journallookup(bot, update):
     parts = update.message.text.split(' ')
     del parts[0]
     datestring = " ".join(parts)
-    
+
     #Parse the string - prefer DMY to MDY - most of world uses DMY
     dateinfo = dateparser.parse(datestring, settings={'DATE_ORDER': 'DMY', 'STRICT_PARSING': True})
     if dateinfo is not None:
         dateinfo = dateinfo.date()
         entries = db.get_dated_values("journal", update.message.from_user.id, dateinfo)
+
+        try:
+            bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
+        except BadRequest:
+            pass
+
         for entry in entries:
             #Seperate entry for each message, or we'll hit the telegram length limit for many (or just a few long ones) in one day
             bot.send_message(chat_id=update.message.chat.id, text="📓 Journal entry by {}, dated {}: {}".format(username, entry[1].strftime("%a. %d %B %Y %I:%M%p %Z"), entry[0]))
