@@ -274,9 +274,7 @@ def get_name(user):
     if user.username:
         name_to_show = "@" + user.username
     else:
-        name_to_show = user.first_name
-        if user.last_name:
-            name_to_show += " " + user.last_name
+        name_to_show = user.full_name()
     return name_to_show
 
 def stats(bot, update):
