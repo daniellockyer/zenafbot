@@ -1,4 +1,3 @@
-import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -354,7 +353,7 @@ def generate_linechart_report_from(table, filename, user, days):
     results = db.get_values(table, id, days - 1)
     ratings = [x[0] for x in results]
     dates = [x[1] for x in results]
-    average = np.mean(ratings)
+    average = float(sum(ratings)) / max(len(ratings), 1)
     fig, ax = plt.subplots()
     ax.xaxis.set_major_locator(mdates.DayLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
