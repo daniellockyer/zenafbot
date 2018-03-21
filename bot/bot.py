@@ -354,10 +354,7 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
     elif table == "sleep":
         units = "hours"
 
-    #Give the x axis correct scale
     fig, ax = plt.subplots()
-    ax.xaxis.set_major_locator(mdates.DayLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
 
     x_limits = get_chart_x_limits(start_date, end_date, dates)
     ax.set_xlim(x_limits)
@@ -367,6 +364,13 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
     plt.ylabel(table.title())
 
     interval = (x_limits[1] - x_limits[0]).days
+    #Try to keep the ticks on the x axis readable by limiting to max of 25
+    if interval > 25:
+        ax.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/25)))
+        ax.xaxis.set_minor_locator(mdates.DayLocator())
+    else:
+        ax.xaxis.set_major_locator(mdates.DayLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
     plt.title('{}\'s {} chart\n{} days report. Total: {:.1f} {}'.format(username, table, interval, total, units))
     plt.savefig(filename)
     plt.close()
@@ -381,14 +385,19 @@ def generate_linechart_report_from(table, filename, user, start_date, end_date):
     average = float(sum(ratings)) / max(len(ratings), 1)
 
     fig, ax = plt.subplots()
-    ax.xaxis.set_major_locator(mdates.DayLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
 
     x_limits = get_chart_x_limits(start_date, end_date, [x.date() for x in dates])
     ax.set_xlim(x_limits)
     ax.set_ylim([0,10])
 
     interval = (x_limits[1] - x_limits[0]).days
+    #Try to keep the ticks on the x axis readable by limiting to max of 25
+    if interval > 25:
+        ax.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/25)))
+        ax.xaxis.set_minor_locator(mdates.DayLocator())
+    else:
+        ax.xaxis.set_major_locator(mdates.DayLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
     plt.title('{}\'s {} chart\n{} days report. Average: {:.2f}'.format(username, table, interval, average))
     plt.ylabel(table.title())
 
