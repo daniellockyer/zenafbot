@@ -53,7 +53,7 @@ def get_top(n):
 
 def add_to_table(table, id, value):
     cursor = get_connection().cursor()
-    cursor.execute(SQL("INSERT INTO {} (id, value) VALUES (%s, %s)".format(Identifier(table))), (id, value))
+    cursor.execute(sql.SQL("INSERT INTO {} (id, value) VALUES (%s, %s)").format(sql.Identifier(table)), (id, value))
     get_connection().commit()
     cursor.close()
 
