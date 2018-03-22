@@ -53,6 +53,18 @@ def meditate(bot, update):
         "value_error": "🙏 You need to specify the minutes as a number! 🙏"
     })
 
+def find_rating_change(table, user_id, new_value):
+    now = datetime.datetime.now()
+    yesterday = get_x_days_before(now, 1)
+    # We want to find change in rating between current value and most recent value in 24 last hours
+    ratings_last_day = db.get_values(table, start_date=yesterday, end_date=now, user_id=user_id)
+    difference_str = ""
+    if len(ratings_last_day) > 1:
+        ratings_last_day.sort(key=lambda r: r[1], reverse=True)
+        difference = new_value - ratings_last_day[1][0]
+        difference_str = ' ({})'.format("{:+}".format(difference) if difference else "no change")
+    return difference_str
+
 def anxiety(bot, update):
     def validationCallback(parts):
         value = int(parts[1])
@@ -73,16 +85,9 @@ def anxiety(bot, update):
         else:
             em = "😎"
 
-        # We want to find change in anxiety
-        anxiety_last_day = db.get_values("anxiety", update.message.from_user.id, 1)
-        difference_str = ""
-        if len(anxiety_last_day) > 1:
-            anxiety_last_day.sort(key=lambda r: r[1], reverse=True)
-            difference = value - anxiety_last_day[1][0]
-            difference_str = ' ({})'.format("{:+}".format(difference) if difference else "no change")
-
+        difference = find_rating_change("anxiety", update.message.from_user.id, value)
         bot.send_message(chat_id=update.message.chat.id,
-                         text="{} {} rated their anxiety at {}{} {}".format(em, name_to_show, value, difference_str, em))
+                         text="{} {} rated their anxiety at {}{} {}".format(em, name_to_show, value, difference, em))
 
     delete_and_send(bot, update, validationCallback, successCallback, {
         "table_name": "anxiety",
@@ -114,16 +119,9 @@ def happiness(bot, update):
         else:
             em = "😭"
 
-        # We want to find change in happiness
-        happiness_last_day = db.get_values("happiness", update.message.from_user.id, 1)
-        difference_str = ""
-        if len(happiness_last_day) > 1:
-            happiness_last_day.sort(key=lambda r: r[1], reverse=True)
-            difference = value - happiness_last_day[1][0]
-            difference_str = ' ({})'.format("{:+}".format(difference) if difference else "no change")
-
+        difference = find_rating_change("anxiety", update.message.from_user.id, value)
         bot.send_message(chat_id=update.message.chat.id,
-                         text="{} {} rated their happiness at {}{} {}".format(em, name_to_show, value, difference_str, em))
+                         text="{} {} rated their happiness at {}{} {}".format(em, name_to_show, value, difference, em))
 
     delete_and_send(bot, update, validationCallback, successCallback, {
         "table_name": "happiness",
