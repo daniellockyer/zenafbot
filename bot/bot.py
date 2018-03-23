@@ -3,6 +3,8 @@ import datetime
 import logging
 import math
 import os
+import re
+from pytz import timezone, all_timezones
 
 import dateparser
 import matplotlib
@@ -20,6 +22,7 @@ if TOKEN is None:
 
 updater = Updater(token=TOKEN)
 dispatcher = updater.dispatcher
+jobqueue = updater.job_queue
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
@@ -77,6 +80,65 @@ def meditate(bot, update):
         "value_error": "🙏 You need to specify the minutes as a number! 🙏"
     })
 
+def schedulereminders(bot, update):
+    parts = update.message.text.split(' ')
+    if len(parts) == 2 and parts[1] == "off":
+        #Delete is too powerful to have as a generalised function
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM meditationreminders WHERE id = %s', (update.message.from_user.id))
+        conn.commit()
+        cursor.close()
+        bot.send_message(chat_id=update.message.from_user.id, text="Okay, you won't recieve reminders anymore! ✌️")
+        return True
+
+    new_parts = []
+    if parts[len(parts)] in all_timezones:
+        tz = timezone(parts[len(parts)])
+        for i in range(1,len(parts)-1):
+            part = parts[i]
+            if not re.match('((([1-9])|(1[0-2]))(AM|PM|am|pm))', part):
+                bot.send_message(chat_id=update.message.chat.id, text="Sorry, I didn't understand this hour: `{}`. "\
+                                "It should look similar to this: `11AM`. The whole command should look similar to this: "\
+                                "`\\reminders 1PM 5PM 11PM UTC`. You can specify as many hours as you like.".format(part))
+                return False
+            else:
+                hour = 0
+                if part.lower().endswith("pm"):
+                    hour = 12
+                hour = (hour + int(part[:-2])) % 24
+                # Take our tz hour, convert it to utc hour
+                new_parts.append(tz.localize(datetime.datetime(2018, 3, 23, hour, 0, 0)).astimezone(timezone("UTC")).hour)
+    else:
+        bot.send_message(chat_id=update.message.chat.id, text="Sorry, I didn't understand the timezone you specified: `{}`. "\
+                        "It can take the form of a specific time like `UTC` or as for a country `Europe/Amsterdam`. "\
+                        "The whole command should look similar to this: "\
+                        "`\\reminders 1PM 5PM 11PM UTC`. You can specify as many hours as you like.".format(parts[len(parts)]))
+        return False
+
+    user = get_or_create_user(bot, update)
+    for hour in new_parts:
+        db.add_to_table("meditationreminders", update.message.from_user.id, hour)
+    username = get_name(update.message.from_user)
+    has_pm_bot = user[5]
+    if has_pm_bot is True:
+        bot.send_message(chat_id=update.message.from_user.id, text="Okay {}, I've scheduled those reminders for you! 🕑".format(username))
+    else:
+        bot.send_message(chat_id=update.message.chat.id, text="Okay {}, I've scheduled those reminders for you! 🕑 "/
+                            "If you haven't already, please send me a PM at @zenafbot so that I can PM your reminders to you!")
+
+
+def executereminders(bot, job):
+    now = datetime.datetime.now()
+    users_to_notify = db.get_values("meditationreminders", value=now.hour)
+    for user in users_to_notify:
+        user_id = user[0]
+        start_check_period = now - datetime.timedelta(hours=15)
+        meditations = db.get_values("meditation", start_date=start_check_period, end_date=now, user_id=user_id)
+        if len(meditations) == 0:
+            bot.send_message(chat_id=user_id, text="Hey! You asked me to send you a private message to remind you to meditate! 🙏 "\
+                                               "You can turn off these notifications with `/reminders off`. 🕑")
+
 def find_rating_change(table, user_id, new_value):
     now = datetime.datetime.now()
     yesterday = get_x_days_before(now, 1)
@@ -84,8 +146,8 @@ def find_rating_change(table, user_id, new_value):
     ratings_last_day = db.get_values(table, start_date=yesterday, end_date=now, user_id=user_id)
     difference_str = ""
     if len(ratings_last_day) > 1:
-        ratings_last_day.sort(key=lambda r: r[1], reverse=True)
-        difference = new_value - ratings_last_day[1][0]
+        ratings_last_day.sort(key=lambda r: r[2], reverse=True)
+        difference = new_value - ratings_last_day[1][1]
         difference_str = ' ({})'.format("{:+}".format(difference) if difference else "no change")
     return difference_str
 
@@ -367,7 +429,7 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
 
     dates_to_value_mapping = defaultdict(int)
     for result in results:
-        dates_to_value_mapping[result[1].date()] += result[0]
+        dates_to_value_mapping[result[2].date()] += result[1]
 
     dates = dates_to_value_mapping.keys()
     values = dates_to_value_mapping.values()
@@ -404,8 +466,8 @@ def generate_linechart_report_from(table, filename, user, start_date, end_date):
     username = get_name(user)
     results = db.get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
 
-    ratings = [x[0] for x in results]
-    dates = [x[1] for x in results]
+    ratings = [x[1] for x in results]
+    dates = [x[2] for x in results]
     average = float(sum(ratings)) / max(len(ratings), 1)
 
     _, ax = plt.subplots()
@@ -429,6 +491,12 @@ def generate_linechart_report_from(table, filename, user, start_date, end_date):
     plt.savefig(filename)
     plt.close()
 
+#Returns number of seconds until xx:00:00.
+#If currently 11:43:23, then should return 37 + 60 * 16
+def time_until_next_hour():
+    now = datetime.datetime.now()
+    return (60 - now.second) + 60 * (60 - now.minute)
+
 #######################################################################################
 
 cursor = db.get_connection().cursor()
@@ -443,6 +511,12 @@ cursor.execute("CREATE TABLE IF NOT EXISTS users(\
 );")
 
 cursor.execute("CREATE TABLE IF NOT EXISTS meditation(\
+    id INTEGER NOT NULL REFERENCES users(id),\
+    value INTEGER NOT NULL,\
+    created_at TIMESTAMP NOT NULL DEFAULT now()\
+);")
+
+cursor.execute("CREATE TABLE IF NOT EXISTS meditationreminders(\
     id INTEGER NOT NULL REFERENCES users(id),\
     value INTEGER NOT NULL,\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
@@ -494,8 +568,13 @@ dispatcher.add_handler(CommandHandler('happystats', stats))
 dispatcher.add_handler(CommandHandler('happinessstats', stats))
 dispatcher.add_handler(CommandHandler('journal', journaladd))
 dispatcher.add_handler(CommandHandler('journalentries', journallookup))
+dispatcher.add_handler(CommandHandler('reminders', schedulereminders))
 # Respond to private messages
 dispatcher.add_handler(MessageHandler(Filters.private, pm))
+
+#Run the function on every hour to remind people to meditate
+jobqueue.run_repeating(executereminders, interval=3600, first=time_until_next_hour()+10)
+
 
 updater.start_polling()
 updater.idle()
