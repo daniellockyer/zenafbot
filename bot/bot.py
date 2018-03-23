@@ -108,7 +108,9 @@ def schedulereminders(bot, update):
                     hour = 12
                 hour = (hour + int(part[:-2])) % 24
                 # Take our tz hour, convert it to utc hour
-                new_parts.append(tz.localize(datetime.datetime(2018, 3, 23, hour, 0, 0)).astimezone(timezone("UTC")).hour)
+                notification_hour = tz.localize(datetime.datetime(2018, 3, 23, hour, 0, 0)).astimezone(timezone("UTC")).hour
+                midnight = tz.localize(datetime.datetime(2018, 3, 23, 0, 0, 0)).astimezone(timezone("UTC")).hour
+                new_parts.append((notification_hour, midnight))
     else:
         bot.send_message(chat_id=update.message.chat.id, text="Sorry, I didn't understand the timezone you specified: `{}`. "\
                         "It can take the form of a specific time like `UTC` or as for a country `Europe/Amsterdam`. "\
@@ -117,8 +119,8 @@ def schedulereminders(bot, update):
         return False
 
     user = get_or_create_user(bot, update)
-    for hour in new_parts:
-        db.add_to_table("meditationreminders", update.message.from_user.id, hour)
+    for hours in new_parts:
+        db.add_meditation_reminder(update.message.from_user.id, hours[0], hours[1])
     username = get_name(update.message.from_user)
     has_pm_bot = user[5]
     if has_pm_bot is True:
@@ -133,7 +135,14 @@ def executereminders(bot, job):
     users_to_notify = db.get_values("meditationreminders", value=now.hour)
     for user in users_to_notify:
         user_id = user[0]
-        start_check_period = now - datetime.timedelta(hours=15)
+        user_midnight_utc = user[2] #Will be an int like 2, meaning midnight is at 2AM UTC for the user
+        #We don't want to notify if the user already meditated today
+        #Because of timezones, 'today' probably means something different for user
+        #So we check between their midnight and now
+        if user_midnight_utc > now.hour:
+            start_check_period = get_x_days_before(now, 1).replace(hour=user_midnight_utc, minute=0, second=0)
+        else:
+            start_check_period = now.replace(hour=user_midnight_utc, minute=0, second=0)
         meditations = db.get_values("meditation", start_date=start_check_period, end_date=now, user_id=user_id)
         if len(meditations) == 0:
             bot.send_message(chat_id=user_id, text="Hey! You asked me to send you a private message to remind you to meditate! 🙏 "\
@@ -519,6 +528,7 @@ cursor.execute("CREATE TABLE IF NOT EXISTS meditation(\
 cursor.execute("CREATE TABLE IF NOT EXISTS meditationreminders(\
     id INTEGER NOT NULL REFERENCES users(id),\
     value INTEGER NOT NULL,\
+    midnight INTEGER NOT NULL,\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 

@@ -57,6 +57,12 @@ def add_to_table(table, id, value):
     get_connection().commit()
     cursor.close()
 
+def add_meditation_reminder(id, value, midnight):
+    cursor = get_connection().cursor()
+    cursor.execute("INSERT INTO meditationreminders (id, value, midnight) VALUES (%s, %s, %s)", (id, value, midnight))
+    get_connection().commit()
+    cursor.close()
+
 def get_values(table, start_date=None, end_date=None, user_id=None, value=None):
     cursor = get_connection().cursor()
     query = sql.SQL("SELECT * FROM {} WHERE "\
