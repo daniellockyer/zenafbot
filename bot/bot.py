@@ -23,6 +23,24 @@ dispatcher = updater.dispatcher
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
+def help(bot, update):
+    message = \
+        "/top = Shows top 5 people with the highest meditation count\n"\
+        "/groupstats = Graph of total meditation time by the group\n"\
+        "\n"\
+        "/meditate [minutes] = Record your meditation (5 mins. minimum)\n"\
+        "/anxiety [0-10] = Record your anxiety level (0 low, 10 high)\n"\
+        "/sleep [0-24] = Record your sleep (hours)\n"\
+        "/happiness [0-10] = Record your happiness level (0 low, 10 high)\n"\
+        "/journal [entry] = Log a journal entry (Either publicly or in private to @zenafbot)\n"\
+        "\n"\
+        "/meditatestats [weekly|biweekly|monthly|all] = Graph of your meditation history\n"\
+        "/anxietystats [weekly|biweekly|monthly|all] = Graph of your anxiety levels\n"\
+        "/sleepstats [weekly|biweekly|monthly|all] = Graph of your sleep history\n"\
+        "/happystats [weekly|biweekly|monthly|all] = Graph of your happiness levels\n"\
+        "/journalentries day-month-year = Retrieve journal entries (eg. /journalentries 22-MARCH-2018)"
+    bot.send_message(chat_id=update.message.chat_id, text=message)
+
 def pm(bot, update):
     user = get_or_create_user(bot, update)
     has_pm_bot = user[5]
@@ -453,6 +471,8 @@ cursor.execute("CREATE TABLE IF NOT EXISTS journal(\
 
 db.get_connection().commit()
 cursor.close()
+
+dispatcher.add_handler(CommandHandler('help', help))
 
 dispatcher.add_handler(CommandHandler('anxiety', anxiety))
 dispatcher.add_handler(CommandHandler('anxietystats', stats))
