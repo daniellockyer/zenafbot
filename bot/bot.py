@@ -39,6 +39,12 @@ def help(bot, update):
         "/sleepstats [weekly|biweekly|monthly|all] = Graph of your sleep history\n"\
         "/happystats [weekly|biweekly|monthly|all] = Graph of your happiness levels\n"\
         "/journalentries day-month-year = Retrieve journal entries (eg. /journalentries 22-MARCH-2018)"
+
+    try:
+        bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
+    except BadRequest:
+        pass
+
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
 def pm(bot, update):
