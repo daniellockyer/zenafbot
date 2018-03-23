@@ -287,7 +287,7 @@ def journallookup(bot, update):
 
         for entry in entries:
             #Seperate entry for each message, or we'll hit the telegram length limit for many (or just a few long ones) in one day
-            bot.send_message(chat_id=update.message.chat.id, text="📓 Journal entry by {}, dated {}: {}".format(username, entry[1].strftime("%a. %d %B %Y %I:%M%p %Z"), entry[0]))
+            bot.send_message(chat_id=update.message.chat.id, text="📓 Journal entry by {}, dated {}: {}".format(username, entry[2].strftime("%a. %d %B %Y %I:%M%p %Z"), entry[1]))
     else:
         bot.send_message(chat_id=update.message.chat.id, text="Sorry, I couldn't understand that date format. 🤔")
 
