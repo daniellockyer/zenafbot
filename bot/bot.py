@@ -86,7 +86,7 @@ def schedulereminders(bot, update):
         #Delete is too powerful to have as a generalised function
         conn = db.get_connection()
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM meditationreminders WHERE id = %s', (update.message.from_user.id))
+        cursor.execute('DELETE FROM meditationreminders WHERE id = %s', (update.message.from_user.id,))
         conn.commit()
         cursor.close()
         bot.send_message(chat_id=update.message.from_user.id, text="Okay, you won't recieve reminders anymore! ✌️")
