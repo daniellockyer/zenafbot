@@ -93,9 +93,9 @@ def schedulereminders(bot, update):
         return True
 
     new_parts = []
-    if parts[len(parts)] in all_timezones:
-        tz = timezone(parts[len(parts)])
-        for i in range(1,len(parts)-1):
+    if parts[len(parts) - 1] in all_timezones:
+        tz = timezone(parts[len(parts) - 1])
+        for i in range(1, len(parts) - 1):
             part = parts[i]
             if not re.match('((([1-9])|(1[0-2]))(AM|PM|am|pm))', part):
                 bot.send_message(chat_id=update.message.chat.id, text="Sorry, I didn't understand this hour: `{}`. "\
@@ -113,7 +113,7 @@ def schedulereminders(bot, update):
         bot.send_message(chat_id=update.message.chat.id, text="Sorry, I didn't understand the timezone you specified: `{}`. "\
                         "It can take the form of a specific time like `UTC` or as for a country `Europe/Amsterdam`. "\
                         "The whole command should look similar to this: "\
-                        "`\\reminders 1PM 5PM 11PM UTC`. You can specify as many hours as you like.".format(parts[len(parts)]))
+                        "`\\reminders 1PM 5PM 11PM UTC`. You can specify as many hours as you like.".format(parts[len(parts) - 1]))
         return False
 
     user = get_or_create_user(bot, update)
