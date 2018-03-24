@@ -214,7 +214,7 @@ def happiness(bot, update):
         else:
             em = "😭"
 
-        difference = find_rating_change("anxiety", update.message.from_user.id, value)
+        difference = find_rating_change("happiness", update.message.from_user.id, value)
         bot.send_message(chat_id=update.message.chat.id,
                          text="{} {} rated their happiness at {}{} {}".format(em, name_to_show, value, difference, em))
 
