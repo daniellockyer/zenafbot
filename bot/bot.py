@@ -89,7 +89,7 @@ def schedulereminders(bot, update):
         cursor.execute('DELETE FROM meditationreminders WHERE id = %s', (update.message.from_user.id,))
         conn.commit()
         cursor.close()
-        bot.send_message(chat_id=update.message.from_user.id, text="Okay, you won't recieve reminders anymore! ✌️")
+        bot.send_message(chat_id=update.message.from_user.id, text="Okay, you won't receive reminders anymore! ✌️")
         return True
 
     new_parts = []
