@@ -22,44 +22,44 @@ def get_connection():
 
     return CONNECTION
 
-def set_has_pmed(id):
+def set_has_pmed(user_id):
     cursor = get_connection().cursor()
-    cursor.execute('UPDATE users SET haspm = TRUE WHERE id = %s', (id,))
+    cursor.execute('UPDATE users SET haspm = TRUE WHERE id = %s', (user_id,))
     get_connection().commit()
     cursor.close()
 
-def increase_streak_of(id):
+def increase_streak_of(user_id):
     cursor = get_connection().cursor()
-    cursor.execute('UPDATE users SET streak = streak + 1 WHERE id = %s', (id,))
+    cursor.execute('UPDATE users SET streak = streak + 1 WHERE id = %s', (user_id,))
     get_connection().commit()
     cursor.close()
 
-def get_streak_of(id):
+def get_streak_of(user_id):
     cursor = get_connection().cursor()
-    cursor.execute('SELECT streak FROM users WHERE id = %s', (id,))
+    cursor.execute('SELECT streak FROM users WHERE id = %s', (user_id,))
     result = cursor.fetchone()
     get_connection().commit()
     return result[0]
 
-def get_top(n):
+def get_top(count):
     cursor = get_connection().cursor()
     cursor.execute(
         'SELECT first_name, last_name, username, streak FROM users ORDER BY streak DESC LIMIT %s',
-        (n,)
+        (count,)
     )
     results = cursor.fetchall()
     get_connection().commit()
     return results
 
-def add_to_table(table, id, value):
+def add_to_table(table, user_id, value):
     cursor = get_connection().cursor()
-    cursor.execute(sql.SQL("INSERT INTO {} (id, value) VALUES (%s, %s)").format(sql.Identifier(table)), (id, value))
+    cursor.execute(sql.SQL("INSERT INTO {} (id, value) VALUES (%s, %s)").format(sql.Identifier(table)), (user_id, value))
     get_connection().commit()
     cursor.close()
 
-def add_meditation_reminder(id, value, midnight):
+def add_meditation_reminder(user_id, value, midnight):
     cursor = get_connection().cursor()
-    cursor.execute("INSERT INTO meditationreminders (id, value, midnight) VALUES (%s, %s, %s)", (id, value, midnight))
+    cursor.execute("INSERT INTO meditationreminders (id, value, midnight) VALUES (%s, %s, %s)", (user_id, value, midnight))
     get_connection().commit()
     cursor.close()
 

@@ -20,13 +20,13 @@ TOKEN = os.environ.get('BOT_TOKEN', None)
 if TOKEN is None:
     raise Exception('No Token!')
 
-updater = Updater(token=TOKEN)
-dispatcher = updater.dispatcher
-jobqueue = updater.job_queue
+UPDATER = Updater(token=TOKEN)
+DISPATCHER = UPDATER.dispatcher
+JOBQUEUE = UPDATER.job_queue
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-def help(bot, update):
+def help_message(bot, update):
     message = \
         "/top = Shows top 5 people with the highest meditation count\n"\
         "/groupstats = Graph of total meditation time by the group\n"\
@@ -63,18 +63,18 @@ def pm(bot, update):
             "That way you can keep things private with me! 💖")
 
 def meditate(bot, update):
-    def validationCallback(parts):
+    def validation_callback(parts):
         value = int(parts[1])
         if value < 5 or value > 1440:
             bot.send_message(chat_id=update.message.from_user.id, text="🙏 Meditation time must be between 5 and 1440 minutes. 🙏")
             return False
         return value
 
-    def successCallback(name_to_show, value, update):
+    def success_callback(name_to_show, value, update):
         bot.send_message(chat_id=update.message.chat.id, text="🙏 {} meditated for {} minutes 🙏".format(name_to_show, value))
         db.increase_streak_of(update.message.from_user.id)
 
-    delete_and_send(bot, update, validationCallback, successCallback, {
+    delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "meditation",
         "wrong_length": "🙏 How many minutes did you meditate? 🙏",
         "value_error": "🙏 You need to specify the minutes as a number! 🙏"
@@ -130,7 +130,7 @@ def schedulereminders(bot, update):
                         "If you haven't already, please send me a PM at @zenafbot so that I can PM your reminders to you!")
 
 
-def executereminders(bot, job):
+def executereminders(bot, _):
     now = datetime.datetime.now()
     users_to_notify = db.get_values("meditationreminders", value=now.hour)
     for user in users_to_notify:
@@ -144,7 +144,8 @@ def executereminders(bot, job):
         else:
             start_check_period = now.replace(hour=user_midnight_utc, minute=0, second=0)
         meditations = db.get_values("meditation", start_date=start_check_period, end_date=now, user_id=user_id)
-        if len(meditations) == 0:
+        meditations_len = len(meditations)
+        if meditations_len == 0:
             bot.send_message(chat_id=user_id, text="Hey! You asked me to send you a private message to remind you to meditate! 🙏 "\
                                                "You can turn off these notifications with `/reminders off`. 🕑")
 
@@ -161,81 +162,81 @@ def find_rating_change(table, user_id, new_value):
     return difference_str
 
 def anxiety(bot, update):
-    def validationCallback(parts):
+    def validation_callback(parts):
         value = int(parts[1])
         if value < 0 or value > 10:
             bot.send_message(chat_id=update.message.from_user.id, text="Please rate your anxiety between 0 (low) and 10 (high).")
             return False
         return value
 
-    def successCallback(name_to_show, value, update):
+    def success_callback(name_to_show, value, update):
         if value >= 9:
-            em = "😭"
+            emoji = "😭"
         elif value >= 7:
-            em = "😦"
+            emoji = "😦"
         elif value >= 5:
-            em = "😐"
+            emoji = "😐"
         elif value >= 3:
-            em = "🙂"
+            emoji = "🙂"
         else:
-            em = "😎"
+            emoji = "😎"
 
         difference = find_rating_change("anxiety", update.message.from_user.id, value)
         bot.send_message(chat_id=update.message.chat.id,
-                         text="{} {} rated their anxiety at {}{} {}".format(em, name_to_show, value, difference, em))
+                         text="{} {} rated their anxiety at {}{} {}".format(emoji, name_to_show, value, difference, emoji))
 
-    delete_and_send(bot, update, validationCallback, successCallback, {
+    delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "anxiety",
         "wrong_length": "Please give your anxiety levels.",
         "value_error": "You need to specify the value as a number."
     })
 
 def happiness(bot, update):
-    def validationCallback(parts):
+    def validation_callback(parts):
         value = int(parts[1])
         if value < 0 or value > 10:
             bot.send_message(chat_id=update.message.chat.id, text="Please rate your happiness level 0-10")
             return False
         return value
 
-    def successCallback(name_to_show, value, update):
+    def success_callback(name_to_show, value, update):
         if value >= 9:
-            em = "😎"
+            emoji = "😎"
         elif value >= 7:
-            em = "😄"
+            emoji = "😄"
         elif value >= 5:
-            em = "🙂"
+            emoji = "🙂"
         elif value >= 4:
-            em = "😐"
+            emoji = "😐"
         elif value >= 3:
-            em = "😕"
+            emoji = "😕"
         elif value >= 1:
-            em = "😦"
+            emoji = "😦"
         else:
-            em = "😭"
+            emoji = "😭"
 
         difference = find_rating_change("happiness", update.message.from_user.id, value)
         bot.send_message(chat_id=update.message.chat.id,
-                         text="{} {} rated their happiness at {}{} {}".format(em, name_to_show, value, difference, em))
+                         text="{} {} rated their happiness at {}{} {}".format(emoji, name_to_show, value, difference, emoji))
 
-    delete_and_send(bot, update, validationCallback, successCallback, {
+    delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "happiness",
         "wrong_length": "Please rate your happiness level between 0-10",
         "value_error": "You need to specify the value as a decimal number (eg. 7.5)"
     })
 
 def sleep(bot, update):
-    def validationCallback(parts):
+    def validation_callback(parts):
         value = float(parts[1])
         if value < 0 or value > 24:
             bot.send_message(chat_id=update.message.from_user.id, text="💤 Please give how many hours you slept. 💤")
             return False
         return value
 
-    def successCallback(name_to_show, value, update):
+    def success_callback(name_to_show, value, update):
         bot.send_message(chat_id=update.message.chat.id, text="💤 {} slept for {} hours 💤".format(name_to_show, value))
 
-    delete_and_send(bot, update, validationCallback, successCallback, {
+    delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "sleep",
         "wrong_length": "💤 Please give how many hours you slept. 💤",
         "value_error": "💤 You need to specify the value as a decimal number (eg. 7.5) 💤"
@@ -243,19 +244,20 @@ def sleep(bot, update):
 
 #Add an entry to your journal
 def journaladd(bot, update):
-    def validationCallback(parts):
+    def validation_callback(parts):
         #String will always fit in db as db stores as much as max length for telegram message
         del parts[0]
         journalentry = " ".join(parts)
-        if len(journalentry) == 0 or len(journalentry) > 4000:
+        journalentry_len = len(journalentry)
+        if journalentry_len == 0 or journalentry_len > 4000:
             bot.send_message(chat_id=update.message.from_user.id, text="✏️ Please give a journal entry between 0 and 4000 characters! ✏️")
             return False
         return journalentry
 
-    def successCallback(name_to_show, _, update):
+    def success_callback(name_to_show, _, update):
         bot.send_message(chat_id=update.message.chat.id, text="✏️ {} logged a journal entry! ✏️".format(name_to_show))
 
-    delete_and_send(bot, update, validationCallback, successCallback, {
+    delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "journal",
         "wrong_length": "✏️ Please give a journal entry. ✏️",
         "value_error": "✏️ Please give a valid journal entry. ✏️" #Don't think this one will trigger
@@ -276,13 +278,14 @@ def journallookup(bot, update):
         start_of_day = datetime.datetime(dateinfo.year, dateinfo.month, dateinfo.day)
         end_of_day = start_of_day + datetime.timedelta(days=1)
         entries = db.get_values("journal", start_date=start_of_day, end_date=end_of_day, user_id=user_id)
+        entries_len = len(entries)
 
         try:
             bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
         except BadRequest:
             pass
 
-        if len(entries) == 0:
+        if entries_len == 0:
             bot.send_message(chat_id=update.message.chat.id, text="📓 {} had no journal entries on {}. 📓".format(username, dateinfo.isoformat()))
 
         for entry in entries:
@@ -313,7 +316,7 @@ def top(bot, update):
     message = '\n'.join(line)
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
-def delete_and_send(bot, update, validationCallback, successCallback, strings):
+def delete_and_send(bot, update, validation_callback, success_callback, strings):
     get_or_create_user(bot, update)
     parts = update.message.text.split(' ')
     if len(parts) < 2:
@@ -321,7 +324,7 @@ def delete_and_send(bot, update, validationCallback, successCallback, strings):
         return
 
     try:
-        value = validationCallback(parts)
+        value = validation_callback(parts)
         if value is False:
             return
     except ValueError:
@@ -336,7 +339,7 @@ def delete_and_send(bot, update, validationCallback, successCallback, strings):
 
     user = update.message.from_user
     name_to_show = get_name(user)
-    successCallback(name_to_show, value, update)
+    success_callback(name_to_show, value, update)
 
 def get_or_create_user(bot, update):
     user = update.message.from_user
@@ -382,7 +385,6 @@ def stats(bot, update):
     get_or_create_user(bot, update)
     parts = update.message.text.split(' ')
     command = parts[0].split("@")[0]
-    duration = 7
     user = update.message.from_user
 
     now = datetime.datetime.now()
@@ -449,11 +451,11 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
     elif table == "sleep":
         units = "hours"
 
-    _, ax = plt.subplots()
+    _, axis = plt.subplots()
 
     x_limits = get_chart_x_limits(start_date, end_date, dates)
-    ax.set_xlim(x_limits)
-    ax.xaxis_date()
+    axis.set_xlim(x_limits)
+    axis.xaxis_date()
 
     plt.bar(dates, values, align='center', alpha=0.5)
     plt.ylabel(table.title())
@@ -461,11 +463,11 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
     interval = (x_limits[1] - x_limits[0]).days
     #Try to keep the ticks on the x axis readable by limiting to max of 25
     if interval > 25:
-        ax.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/25)))
-        ax.xaxis.set_minor_locator(mdates.DayLocator())
+        axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/25)))
+        axis.xaxis.set_minor_locator(mdates.DayLocator())
     else:
-        ax.xaxis.set_major_locator(mdates.DayLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
+        axis.xaxis.set_major_locator(mdates.DayLocator())
+    axis.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
     plt.title('{}\'s {} chart\n{} days report. Total: {:.1f} {}'.format(username, table, interval, total, units))
     plt.savefig(filename)
     plt.close()
@@ -479,20 +481,20 @@ def generate_linechart_report_from(table, filename, user, start_date, end_date):
     dates = [x[2] for x in results]
     average = float(sum(ratings)) / max(len(ratings), 1)
 
-    _, ax = plt.subplots()
+    _, axis = plt.subplots()
 
     x_limits = get_chart_x_limits(start_date, end_date, [x.date() for x in dates])
-    ax.set_xlim(x_limits)
-    ax.set_ylim([0, 10])
+    axis.set_xlim(x_limits)
+    axis.set_ylim([0, 10])
 
     interval = (x_limits[1] - x_limits[0]).days
     #Try to keep the ticks on the x axis readable by limiting to max of 25
     if interval > 25:
-        ax.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/25)))
-        ax.xaxis.set_minor_locator(mdates.DayLocator())
+        axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/25)))
+        axis.xaxis.set_minor_locator(mdates.DayLocator())
     else:
-        ax.xaxis.set_major_locator(mdates.DayLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
+        axis.xaxis.set_major_locator(mdates.DayLocator())
+    axis.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
     plt.title('{}\'s {} chart\n{} days report. Average: {:.2f}'.format(username, table, interval, average))
     plt.ylabel(table.title())
 
@@ -562,29 +564,28 @@ cursor.execute("CREATE TABLE IF NOT EXISTS journal(\
 db.get_connection().commit()
 cursor.close()
 
-dispatcher.add_handler(CommandHandler('help', help))
+DISPATCHER.add_handler(CommandHandler('help', help_message))
 
-dispatcher.add_handler(CommandHandler('anxiety', anxiety))
-dispatcher.add_handler(CommandHandler('anxietystats', stats))
-dispatcher.add_handler(CommandHandler('meditate', meditate))
-dispatcher.add_handler(CommandHandler('meditatestats', stats))
-dispatcher.add_handler(CommandHandler('sleep', sleep))
-dispatcher.add_handler(CommandHandler('sleepstats', stats))
-dispatcher.add_handler(CommandHandler('top', top))
-dispatcher.add_handler(CommandHandler('groupstats', stats))
-dispatcher.add_handler(CommandHandler('happiness', happiness))
+DISPATCHER.add_handler(CommandHandler('anxiety', anxiety))
+DISPATCHER.add_handler(CommandHandler('anxietystats', stats))
+DISPATCHER.add_handler(CommandHandler('meditate', meditate))
+DISPATCHER.add_handler(CommandHandler('meditatestats', stats))
+DISPATCHER.add_handler(CommandHandler('sleep', sleep))
+DISPATCHER.add_handler(CommandHandler('sleepstats', stats))
+DISPATCHER.add_handler(CommandHandler('top', top))
+DISPATCHER.add_handler(CommandHandler('groupstats', stats))
+DISPATCHER.add_handler(CommandHandler('happiness', happiness))
 # Next two are synonyms as 'happinessstats' is weird AF
-dispatcher.add_handler(CommandHandler('happystats', stats))
-dispatcher.add_handler(CommandHandler('happinessstats', stats))
-dispatcher.add_handler(CommandHandler('journal', journaladd))
-dispatcher.add_handler(CommandHandler('journalentries', journallookup))
-dispatcher.add_handler(CommandHandler('reminders', schedulereminders))
+DISPATCHER.add_handler(CommandHandler('happystats', stats))
+DISPATCHER.add_handler(CommandHandler('happinessstats', stats))
+DISPATCHER.add_handler(CommandHandler('journal', journaladd))
+DISPATCHER.add_handler(CommandHandler('journalentries', journallookup))
+DISPATCHER.add_handler(CommandHandler('reminders', schedulereminders))
 # Respond to private messages
-dispatcher.add_handler(MessageHandler(Filters.private, pm))
+DISPATCHER.add_handler(MessageHandler(Filters.private, pm))
 
 #Run the function on every hour to remind people to meditate
-jobqueue.run_repeating(executereminders, interval=3600, first=time_until_next_hour()+10)
+JOBQUEUE.run_repeating(executereminders, interval=3600, first=time_until_next_hour()+10)
 
-
-updater.start_polling()
-updater.idle()
+UPDATER.start_polling()
+UPDATER.idle()
