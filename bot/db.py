@@ -67,9 +67,9 @@ def get_values(table, start_date=None, end_date=None, user_id=None, value=None):
     cursor = get_connection().cursor()
     query = sql.SQL("SELECT * FROM {} WHERE "\
                     "(%s is NULL OR id = %s) "\
-                "AND (%s is NULL OR created_at > %s) "\
-                "AND (%s is NULL OR created_at < %s) "\
-                "AND (%s is NULL OR value = %s);").format(sql.Identifier(table))
+                    "AND (%s is NULL OR created_at > %s) "\
+                    "AND (%s is NULL OR created_at < %s) "\
+                    "AND (%s is NULL OR value = %s);").format(sql.Identifier(table))
     cursor.execute(query, (user_id, user_id, start_date, start_date, end_date, end_date, value, value))
     results = cursor.fetchall()
     get_connection().commit()

@@ -83,7 +83,7 @@ def meditate(bot, update):
 def schedulereminders(bot, update):
     parts = update.message.text.split(' ')
     if len(parts) == 2 and parts[1] == "off":
-        #Delete is too powerful to have as a generalised function
+        # Delete is too powerful to have as a generalised function
         conn = db.get_connection()
         cursor = conn.cursor()
         cursor.execute('DELETE FROM meditationreminders WHERE id = %s', (update.message.from_user.id,))
@@ -135,10 +135,10 @@ def executereminders(bot, _):
     users_to_notify = db.get_values("meditationreminders", value=now.hour)
     for user in users_to_notify:
         user_id = user[0]
-        user_midnight_utc = user[2] #Will be an int like 2, meaning midnight is at 2AM UTC for the user
-        #We don't want to notify if the user already meditated today
-        #Because of timezones, 'today' probably means something different for user
-        #So we check between their midnight and now
+        user_midnight_utc = user[2] # Will be an int like 2, meaning midnight is at 2AM UTC for the user
+        # We don't want to notify if the user already meditated today
+        # Because of timezones, 'today' probably means something different for user
+        # So we check between their midnight and now
         if user_midnight_utc > now.hour:
             start_check_period = get_x_days_before(now, 1).replace(hour=user_midnight_utc, minute=0, second=0)
         else:
@@ -147,7 +147,7 @@ def executereminders(bot, _):
         meditations_len = len(meditations)
         if meditations_len == 0:
             bot.send_message(chat_id=user_id, text="Hey! You asked me to send you a private message to remind you to meditate! 🙏 "\
-                                               "You can turn off these notifications with `/reminders off`. 🕑")
+                                                   "You can turn off these notifications with `/reminders off`. 🕑")
 
 def find_rating_change(table, user_id, new_value):
     now = datetime.datetime.now()
@@ -242,10 +242,10 @@ def sleep(bot, update):
         "value_error": "💤 You need to specify the value as a decimal number (eg. 7.5) 💤"
     })
 
-#Add an entry to your journal
+# Add an entry to your journal
 def journaladd(bot, update):
     def validation_callback(parts):
-        #String will always fit in db as db stores as much as max length for telegram message
+        # String will always fit in db as db stores as much as max length for telegram message
         del parts[0]
         journalentry = " ".join(parts)
         journalentry_len = len(journalentry)
@@ -260,10 +260,10 @@ def journaladd(bot, update):
     delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "journal",
         "wrong_length": "✏️ Please give a journal entry. ✏️",
-        "value_error": "✏️ Please give a valid journal entry. ✏️" #Don't think this one will trigger
+        "value_error": "✏️ Please give a valid journal entry. ✏️" # Don't think this one will trigger
     })
 
-#Recall entries from your journal for a particular day
+# Recall entries from your journal for a particular day
 def journallookup(bot, update):
     user_id = update.message.from_user.id
     username = get_name(update.message.from_user)
@@ -271,7 +271,7 @@ def journallookup(bot, update):
     del parts[0]
     datestring = " ".join(parts)
 
-    #Parse the string - prefer DMY to MDY - most of world uses DMY
+    # Parse the string - prefer DMY to MDY - most of world uses DMY
     dateinfo = dateparser.parse(datestring, settings={'DATE_ORDER': 'DMY', 'STRICT_PARSING': True})
     if dateinfo is not None:
         dateinfo = dateinfo.date()
@@ -289,7 +289,7 @@ def journallookup(bot, update):
             bot.send_message(chat_id=update.message.chat.id, text="📓 {} had no journal entries on {}. 📓".format(username, dateinfo.isoformat()))
 
         for entry in entries:
-            #Seperate entry for each message, or we'll hit the telegram length limit for many (or just a few long ones) in one day
+            # Separate entry for each message, or we'll hit the telegram length limit for many (or just a few long ones) in one day
             bot.send_message(chat_id=update.message.chat.id, text="📓 Journal entry by {}, dated {}: {}".format(username, entry[2].strftime("%a. %d %B %Y %I:%M%p %Z"), entry[1]))
     else:
         bot.send_message(chat_id=update.message.chat.id, text="Sorry, I couldn't understand that date format. 🤔")
@@ -366,7 +366,6 @@ def get_or_create_user(bot, update):
         cursor.execute('SELECT * FROM users WHERE id = %s', (user.id,))
         result = cursor.fetchone()
 
-
     db.get_connection().commit()
     cursor.close()
     return result
@@ -396,10 +395,10 @@ def stats(bot, update):
         elif parts[1] == 'monthly':
             start_date = get_x_days_before(now, 31)
         elif parts[1] == 'all':
-            #Unbounded search for all dates
+            # Unbounded search for all dates
             start_date = None
     else:
-        #Default to a week ago
+        # Default to a week ago
         start_date = get_x_days_before(now, 7)
 
     filename = "./{}-chart.png".format(user.id)
@@ -422,12 +421,12 @@ def stats(bot, update):
 
     with open(filename, 'rb') as photo:
         bot.send_photo(chat_id=update.message.chat_id, photo=photo)
-    #Telegram API is synchronous, so it's OK to clean up now!
+    # Telegram API is synchronous, so it's OK to clean up now!
     os.remove(filename)
 
 def get_chart_x_limits(start_date, end_date, dates):
-    #Limits are difficult as start_date or end_date are allowed to be None
-    #So set limit based on those if set, otherwise based on returned earliest/latest in data
+    # Limits are difficult as start_date or end_date are allowed to be None
+    # So set limit based on those if set, otherwise based on returned earliest/latest in data
     sorted_dates = sorted(dates)
     lower_limit = start_date.date() if start_date else sorted_dates[0]
     upper_limit = end_date.date() if end_date else sorted_dates[-1]
@@ -461,7 +460,7 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
     plt.ylabel(table.title())
 
     interval = (x_limits[1] - x_limits[0]).days
-    #Try to keep the ticks on the x axis readable by limiting to max of 25
+    # Try to keep the ticks on the x axis readable by limiting to max of 25
     if interval > 25:
         axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/25)))
         axis.xaxis.set_minor_locator(mdates.DayLocator())
@@ -488,7 +487,7 @@ def generate_linechart_report_from(table, filename, user, start_date, end_date):
     axis.set_ylim([0, 10])
 
     interval = (x_limits[1] - x_limits[0]).days
-    #Try to keep the ticks on the x axis readable by limiting to max of 25
+    # Try to keep the ticks on the x axis readable by limiting to max of 25
     if interval > 25:
         axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/25)))
         axis.xaxis.set_minor_locator(mdates.DayLocator())
@@ -502,8 +501,8 @@ def generate_linechart_report_from(table, filename, user, start_date, end_date):
     plt.savefig(filename)
     plt.close()
 
-#Returns number of seconds until xx:00:00.
-#If currently 11:43:23, then should return 37 + 60 * 16
+# Returns number of seconds until xx:00:00.
+# If currently 11:43:23, then should return 37 + 60 * 16
 def time_until_next_hour():
     now = datetime.datetime.now()
     return (60 - now.second) + 60 * (60 - now.minute)
@@ -584,7 +583,7 @@ DISPATCHER.add_handler(CommandHandler('reminders', schedulereminders))
 # Respond to private messages
 DISPATCHER.add_handler(MessageHandler(Filters.private, pm))
 
-#Run the function on every hour to remind people to meditate
+# Run the function on every hour to remind people to meditate
 JOBQUEUE.run_repeating(executereminders, interval=3600, first=time_until_next_hour()+10)
 
 UPDATER.start_polling()
