@@ -127,7 +127,7 @@ def schedulereminders(bot, update):
         bot.send_message(chat_id=update.message.from_user.id, text="Okay {}, I've scheduled those reminders for you! 🕑".format(username))
     else:
         bot.send_message(chat_id=update.message.chat.id, text="Okay {}, I've scheduled those reminders for you! 🕑 "\
-                        "If you haven't already, please send me a PM at @zenafbot so that I can PM your reminders to you!")
+                        "If you haven't already, please send me a PM at @zenafbot so that I can PM your reminders to you!".format(username))
 
 
 def executereminders(bot, _):
