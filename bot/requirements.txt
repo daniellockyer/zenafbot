@@ -1,6 +1,6 @@
 matplotlib==2.2.2
 psycopg2==2.7.4
 python-dateutil==2.7.0
-python-telegram-bot==10.0.1
+python-telegram-bot==10.0.2
 dateparser==0.7.0
 pytz==2018.3
