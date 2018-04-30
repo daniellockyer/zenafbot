@@ -71,7 +71,7 @@ def meditate(bot, update):
         return value
 
     def success_callback(name_to_show, value, update):
-        bot.send_message(chat_id=update.message.chat.id, text="🙏 {} meditated for {} minutes 🙏".format(name_to_show, value))
+        bot.send_message(chat_id=update.message.chat.id, text="✅ {} meditated for {} minutes 🙏".format(name_to_show, value))
         db.increase_streak_of(update.message.from_user.id)
 
     delete_and_send(bot, update, validation_callback, success_callback, {
@@ -250,17 +250,17 @@ def journaladd(bot, update):
         journalentry = " ".join(parts)
         journalentry_len = len(journalentry)
         if journalentry_len == 0 or journalentry_len > 4000:
-            bot.send_message(chat_id=update.message.from_user.id, text="✏️ Please give a journal entry between 0 and 4000 characters! ✏️")
+            bot.send_message(chat_id=update.message.from_user.id, text="✏️  Please give a journal entry between 0 and 4000 characters! ✏️")
             return False
         return journalentry
 
     def success_callback(name_to_show, _, update):
-        bot.send_message(chat_id=update.message.chat.id, text="✏️ {} logged a journal entry! ✏️".format(name_to_show))
+        bot.send_message(chat_id=update.message.chat.id, text="✅ {} logged a journal entry! ✏️".format(name_to_show))
 
     delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "journal",
-        "wrong_length": "✏️ Please give a journal entry. ✏️",
-        "value_error": "✏️ Please give a valid journal entry. ✏️" # Don't think this one will trigger
+        "wrong_length": "✏️  Please give a journal entry. ✏️",
+        "value_error": "✏️  Please give a valid journal entry. ✏️" # Don't think this one will trigger
     })
 
 # Recall entries from your journal for a particular day
