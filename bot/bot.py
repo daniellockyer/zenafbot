@@ -35,6 +35,7 @@ def help_message(bot, update):
         "/anxiety [0-10] = Record your anxiety level (0 low, 10 high)\n"\
         "/sleep [0-24] = Record your sleep (hours)\n"\
         "/happiness [0-10] = Record your happiness level (0 low, 10 high)\n"\
+        "/exercise [description] = Log your exercise\n"\
         "/journal [entry] = Log a journal entry (Either publicly or in private to @zenafbot)\n"\
         "\n"\
         "/meditatestats [weekly|biweekly|monthly|all] = Graph of your meditation history\n"\
