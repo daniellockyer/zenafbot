@@ -242,6 +242,25 @@ def sleep(bot, update):
         "value_error": "💤 You need to specify the value as a decimal number (eg. 7.5) 💤"
     })
 
+def exercise(bot, update):
+    def validation_callback(parts):
+        del parts[0]
+        activity = " ".join(parts)
+        activity_len = len(activity)
+        if activity_len == 0 or activity_len > 4000:
+            bot.send_message(chat_id=update.message.from_user.id, text="💪 Please list your activity between 0 and 4000 characters! 💪")
+            return False
+        return activity
+
+    def success_callback(name_to_show, value, update):
+        bot.send_message(chat_id=update.message.chat.id, text="✅ {} just exercised: {}".format(name_to_show, value))
+
+    delete_and_send(bot, update, validation_callback, success_callback, {
+        "table_name": "exercise",
+        "wrong_length": "💪 Please specify your exercise. 💪",
+        "value_error": "💪 You need to specify your exercise within 4000 characters! 💪"
+    })
+
 # Add an entry to your journal
 def journaladd(bot, update):
     def validation_callback(parts):
@@ -560,6 +579,12 @@ cursor.execute("CREATE TABLE IF NOT EXISTS journal(\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
+cursor.execute("CREATE TABLE IF NOT EXISTS exercise(\
+    id INTEGER NOT NULL REFERENCES users(id),\
+    value varchar(4096) NOT NULL,\
+    created_at TIMESTAMP NOT NULL DEFAULT now()\
+);")
+
 db.get_connection().commit()
 cursor.close()
 
@@ -567,6 +592,7 @@ DISPATCHER.add_handler(CommandHandler('help', help_message))
 
 DISPATCHER.add_handler(CommandHandler('anxiety', anxiety))
 DISPATCHER.add_handler(CommandHandler('anxietystats', stats))
+DISPATCHER.add_handler(CommandHandler('exercise', exercise))
 DISPATCHER.add_handler(CommandHandler('meditate', meditate))
 DISPATCHER.add_handler(CommandHandler('meditatestats', stats))
 DISPATCHER.add_handler(CommandHandler('sleep', sleep))
