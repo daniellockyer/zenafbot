@@ -262,6 +262,18 @@ def exercise(bot, update):
         "value_error": "💪 You need to specify your exercise within 4000 characters! 💪"
     })
 
+def rest(bot, update):
+    get_or_create_user(bot, update)
+    db.add_to_table("exercise", update.message.from_user.id, "rest")
+
+    try:
+        bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
+    except BadRequest:
+        pass
+
+    name_to_show = get_name(update.message.from_user)
+    bot.send_message(chat_id=update.message.chat.id, text="✅ {} is resting today!".format(name_to_show,))
+
 # Add an entry to your journal
 def journaladd(bot, update):
     def validation_callback(parts):
@@ -594,6 +606,7 @@ DISPATCHER.add_handler(CommandHandler('help', help_message))
 DISPATCHER.add_handler(CommandHandler('anxiety', anxiety))
 DISPATCHER.add_handler(CommandHandler('anxietystats', stats))
 DISPATCHER.add_handler(CommandHandler('exercise', exercise))
+DISPATCHER.add_handler(CommandHandler('rest', rest))
 DISPATCHER.add_handler(CommandHandler('meditate', meditate))
 DISPATCHER.add_handler(CommandHandler('meditatestats', stats))
 DISPATCHER.add_handler(CommandHandler('sleep', sleep))
