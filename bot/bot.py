@@ -130,7 +130,6 @@ def schedulereminders(bot, update):
         bot.send_message(chat_id=update.message.chat.id, text="Okay {}, I've scheduled those reminders for you! 🕑 "\
                         "If you haven't already, please send me a PM at @zenafbot so that I can PM your reminders to you!".format(username))
 
-
 def executereminders(bot, _):
     now = datetime.datetime.now()
     users_to_notify = db.get_values("meditationreminders", value=now.hour)
@@ -235,7 +234,7 @@ def sleep(bot, update):
         return value
 
     def success_callback(name_to_show, value, update):
-        bot.send_message(chat_id=update.message.chat.id, text="💤 {} slept for {} hours 💤".format(name_to_show, value))
+        bot.send_message(chat_id=update.message.chat.id, text="✅ {} slept for {} hours 💤".format(name_to_show, value))
 
     delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "sleep",
