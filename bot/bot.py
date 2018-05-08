@@ -36,6 +36,7 @@ def help_message(bot, update):
         "/sleep [0-24] = Record your sleep (hours)\n"\
         "/happiness [0-10] = Record your happiness level (0 low, 10 high)\n"\
         "/exercise [description] = Log your exercise\n"\
+        "/fasting [hours] = Record your fasting session (decimals allowed)\n"\
         "/journal [entry] = Log a journal entry (Either publicly or in private to @zenafbot)\n"\
         "\n"\
         "/meditatestats [weekly|biweekly|monthly|all] = Graph of your meditation history\n"\
@@ -240,6 +241,23 @@ def sleep(bot, update):
         "table_name": "sleep",
         "wrong_length": "💤 Please give how many hours you slept. 💤",
         "value_error": "💤 You need to specify the value as a decimal number (eg. 7.5) 💤"
+    })
+
+def fasting(bot, update):
+    def validation_callback(parts):
+        value = float(parts[1])
+        if value < 0:
+            bot.send_message(chat_id=update.message.from_user.id, text="🍽 Please give how many hours you fasted for. 🍽")
+            return False
+        return value
+
+    def success_callback(name_to_show, value, update):
+        bot.send_message(chat_id=update.message.chat.id, text="✅ {} fasted for {} hours 🍽".format(name_to_show, value))
+
+    delete_and_send(bot, update, validation_callback, success_callback, {
+        "table_name": "fasting",
+        "wrong_length": "🍽 Please give how many hours you fasted for. 🍽",
+        "value_error": "🍽 You need to specify the value as a decimal number (eg. 18.5) 🍽"
     })
 
 def exercise(bot, update):
@@ -576,6 +594,12 @@ cursor.execute("CREATE TABLE IF NOT EXISTS sleep(\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
+cursor.execute("CREATE TABLE IF NOT EXISTS fasting(\
+    id INTEGER NOT NULL REFERENCES users(id),\
+    value REAL NOT NULL,\
+    created_at TIMESTAMP NOT NULL DEFAULT now()\
+);")
+
 cursor.execute("CREATE TABLE IF NOT EXISTS happiness(\
     id INTEGER NOT NULL REFERENCES users(id),\
     value INTEGER NOT NULL,\
@@ -602,6 +626,8 @@ cursor.close()
 
 DISPATCHER.add_handler(CommandHandler('help', help_message))
 
+DISPATCHER.add_handler(CommandHandler('fast', fasting))
+DISPATCHER.add_handler(CommandHandler('fasting', fasting))
 DISPATCHER.add_handler(CommandHandler('anxiety', anxiety))
 DISPATCHER.add_handler(CommandHandler('anxietystats', stats))
 DISPATCHER.add_handler(CommandHandler('exercise', exercise))
