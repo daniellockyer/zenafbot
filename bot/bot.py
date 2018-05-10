@@ -372,6 +372,9 @@ def delete_and_send(bot, update, validation_callback, success_callback, strings)
         bot.send_message(chat_id=update.message.from_user.id, text=strings["wrong_length"])
         return
 
+    with open("messages.log", "a") as f:
+        f.write(str(update) + "\n")
+
     try:
         value = validation_callback(parts)
         if value is False:
