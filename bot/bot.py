@@ -509,13 +509,13 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
     plt.ylabel(table.title())
 
     interval = (x_limits[1] - x_limits[0]).days
-    # Try to keep the ticks on the x axis readable by limiting to max of 25
-    if interval > 25:
-        axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/25)))
+    # Try to keep the ticks on the x axis readable by limiting to max of 10
+    if interval > 10:
+        axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/10)))
         axis.xaxis.set_minor_locator(mdates.DayLocator())
     else:
         axis.xaxis.set_major_locator(mdates.DayLocator())
-    axis.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
+    axis.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
     plt.title('{}\'s {} chart\n{} days report. Total: {:.1f} {}'.format(username, table, interval, total, units))
     plt.savefig(filename)
     plt.close()
@@ -536,13 +536,13 @@ def generate_linechart_report_from(table, filename, user, start_date, end_date):
     axis.set_ylim([0, 10])
 
     interval = (x_limits[1] - x_limits[0]).days
-    # Try to keep the ticks on the x axis readable by limiting to max of 25
-    if interval > 25:
-        axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/25)))
+    # Try to keep the ticks on the x axis readable by limiting to max of 10
+    if interval > 10:
+        axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/10)))
         axis.xaxis.set_minor_locator(mdates.DayLocator())
     else:
         axis.xaxis.set_major_locator(mdates.DayLocator())
-    axis.xaxis.set_major_formatter(mdates.DateFormatter('%d'))
+    axis.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
     plt.title('{}\'s {} chart\n{} days report. Average: {:.2f}'.format(username, table, interval, average))
     plt.ylabel(table.title())
 
