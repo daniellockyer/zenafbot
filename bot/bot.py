@@ -100,7 +100,7 @@ def schedulereminders(bot, update):
         for i in range(1, len(parts) - 1):
             part = parts[i]
             if not re.match('((([1-9])|(1[0-2]))(AM|PM|am|pm))', part):
-                bot.send_message(chat_id=update.message.chat.id, text="Sorry, I didn't understand this hour: `{}`. "\
+                bot.send_message(chat_id=update.message.from_user.id, text="Sorry, I didn't understand this hour: `{}`. "\
                                 "It should look similar to this: `11AM`. The whole command should look similar to this: "\
                                 "`\\reminders 1PM 5PM 11PM UTC`. You can specify as many hours as you like.".format(part))
                 return False
@@ -114,7 +114,7 @@ def schedulereminders(bot, update):
                 midnight = tz.localize(datetime.datetime(2018, 3, 23, 0, 0, 0)).astimezone(timezone("UTC")).hour
                 new_parts.append((notification_hour, midnight))
     else:
-        bot.send_message(chat_id=update.message.chat.id, text="Sorry, I didn't understand the timezone you specified: `{}`. "\
+        bot.send_message(chat_id=update.message.from_user.id, text="Sorry, I didn't understand the timezone you specified: `{}`. "\
                         "It can take the form of a specific time like `UTC` or as for a country `Europe/Amsterdam`. "\
                         "The whole command should look similar to this: "\
                         "`\\reminders 1PM 5PM 11PM UTC`. You can specify as many hours as you like.".format(parts[len(parts) - 1]))
@@ -128,7 +128,7 @@ def schedulereminders(bot, update):
     if has_pm_bot is True:
         bot.send_message(chat_id=update.message.from_user.id, text="Okay {}, I've scheduled those reminders for you! 🕑".format(username))
     else:
-        bot.send_message(chat_id=update.message.chat.id, text="Okay {}, I've scheduled those reminders for you! 🕑 "\
+        bot.send_message(chat_id=update.message.from_user.id, text="Okay {}, I've scheduled those reminders for you! 🕑 "\
                         "If you haven't already, please send me a PM at @zenafbot so that I can PM your reminders to you!".format(username))
 
 def executereminders(bot, _):
@@ -196,7 +196,7 @@ def happiness(bot, update):
     def validation_callback(parts):
         value = int(parts[1])
         if value < 0 or value > 10:
-            bot.send_message(chat_id=update.message.chat.id, text="Please rate your happiness level 0-10")
+            bot.send_message(chat_id=update.message.from_user.id, text="Please rate your happiness level 0-10")
             return False
         return value
 
@@ -341,7 +341,7 @@ def journallookup(bot, update):
             # Separate entry for each message, or we'll hit the telegram length limit for many (or just a few long ones) in one day
             bot.send_message(chat_id=update.message.chat.id, text="📓 Journal entry by {}, dated {}: {}".format(username, entry[2].strftime("%a. %d %B %Y %I:%M%p %Z"), entry[1]))
     else:
-        bot.send_message(chat_id=update.message.chat.id, text="Sorry, I couldn't understand that date format. 🤔")
+        bot.send_message(chat_id=update.message.from_user.id, text="Sorry, I couldn't understand that date format. 🤔")
 
 def top(bot, update):
     get_or_create_user(bot, update)
