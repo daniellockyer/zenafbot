@@ -223,7 +223,7 @@ def happiness(bot, update):
     delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "happiness",
         "wrong_length": "Please rate your happiness level between 0-10",
-        "value_error": "You need to specify the value as a decimal number (eg. 7.5)"
+        "value_error": "You need to specify the value as a whole number (eg. 7)"
     })
 
 def sleep(bot, update):
