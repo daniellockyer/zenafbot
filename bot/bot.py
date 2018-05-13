@@ -1,6 +1,5 @@
 from collections import defaultdict
 import datetime
-import logging
 import math
 import os
 import re
@@ -23,8 +22,6 @@ if TOKEN is None:
 UPDATER = Updater(token=TOKEN)
 DISPATCHER = UPDATER.dispatcher
 JOBQUEUE = UPDATER.job_queue
-
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 def help_message(bot, update):
     message = \
