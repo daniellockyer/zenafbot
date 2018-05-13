@@ -545,6 +545,7 @@ def generate_linechart_report_from(table, filename, user, start_date, end_date):
     user_id = user.id
     username = get_name(user)
     results = db.get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
+    results = sorted(results, key=lambda x: x[2])
 
     ratings = [x[1] for x in results]
     dates = [x[2] for x in results]
