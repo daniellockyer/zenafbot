@@ -407,7 +407,7 @@ def delete_and_send(bot, update, validation_callback, success_callback, strings,
 
     user = update.message.from_user
     name_to_show = get_name(user)
-    historic_date = "" if backdate is None else " on " + backdate.isoformat()
+    historic_date = "" if backdate is None else " on " + backdate.date().isoformat()
     success_callback(name_to_show, value, update, historic_date)
 
 def get_or_create_user(bot, update):
