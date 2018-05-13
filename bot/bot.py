@@ -390,6 +390,7 @@ def delete_and_send(bot, update, validation_callback, success_callback, strings,
         #If they backdated, remove the parsed date word so it doesn't show up in the journal, exercise, etc
         if backdate is not None:
             parts = parts[:-1]
+            backdate = backdate.replace(hour=12)
 
     try:
         value = validation_callback(parts)
