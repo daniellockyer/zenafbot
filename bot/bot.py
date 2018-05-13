@@ -25,26 +25,24 @@ JOBQUEUE = UPDATER.job_queue
 
 def help_message(bot, update):
     message = \
-        "`[backdate?]` means that a command supports recording entries for the past.\n"\
-        "Example: `/meditate 10 22-MARCH-2018.`\n"\
-        "This will log a meditation of 10 minutes on the 22nd of March, useful for when you forget to log something. "\
-        "Including this date is completely optional.\n"\
-        "\n"\
         "/top = Shows top 5 people with the highest meditation count\n"\
         "/groupstats = Graph of total meditation time by the group\n"\
         "\n"\
-        "/anxiety \[0-10] \[backdate?] = Record your anxiety level (0 low, 10 high)\n"\
+        "`[backdate?]` means that a command supports recording entries for the past (eg. `/meditate 10 22-MARCH-2018.`) "\
+        "This will log a 10 minutes meditation on March 22nd, useful for when you forget to log something. "\
+        "Including this is completely optional.\n"\
+        "/anxiety \[0-10] \[backdate?] = Anxiety level (0 low, 10 high)\n"\
         "/exercise \[description] \[backdate?] = Log your exercise\n"\
-        "/fasting \[hours] \[backdate?] = Record your fasting session (decimals allowed)\n"\
-        "/happiness \[0-10] \[backdate?] = Record your happiness level (0 low, 10 high)\n"\
+        "/fasting \[hours] \[backdate?] = Your fasting session\n"\
+        "/happiness \[0-10] \[backdate?] = Happiness level (0 low, 10 high)\n"\
         "/journal \[entry] \[backdate?] = Log a journal entry (Either publicly or in private to @zenafbot)\n"\
-        "/meditate \[minutes] \[backdate?] = Record your meditation (5 mins. minimum)\n"\
+        "/meditate \[minutes] \[backdate?] = Record your meditation\n"\
         "/sleep \[0-24] \[backdate?] = Record your sleep (hours)\n"\
         "\n"\
         "`[period]` = either `weekly`, `biweekly`, `monthly` or `all`\n"\
         "/anxietystats \[period] = Graph of your anxiety levels\n"\
         "/happystats \[period] = Graph of your happiness levels\n"\
-        "/journalentries \[dd-mm-yyyy] = Retrieve journal entries from date (eg. /journalentries 22-MARCH-2018)\n"\
+        "/journalentries \[dd-mm-yyyy] = Retrieve journal entries from date\n"\
         "/meditatestats \[period] = Graph of your meditation history\n"\
         "/sleepstats \[period] = Graph of your sleep history"
 
