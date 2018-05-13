@@ -28,29 +28,28 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 def help_message(bot, update):
     message = \
-        "[backdate?] means that a command supports recording entries for the past.\n"\
-        "Example: /meditate 10 22-MARCH-2018.\n"\
-        "This will log a meditation of 10 minutes on the 22nd of March, "\
-        "useful for when you forget to log something. "\
+        "`[backdate?]` means that a command supports recording entries for the past.\n"\
+        "Example: `/meditate 10 22-MARCH-2018.`\n"\
+        "This will log a meditation of 10 minutes on the 22nd of March, useful for when you forget to log something. "\
         "Including this date is completely optional.\n"\
         "\n"\
         "/top = Shows top 5 people with the highest meditation count\n"\
         "/groupstats = Graph of total meditation time by the group\n"\
         "\n"\
-        "/meditate [minutes] [backdate?] = Record your meditation (5 mins. minimum)\n"\
-        "/anxiety [0-10] [backdate?] = Record your anxiety level (0 low, 10 high)\n"\
-        "/sleep [0-24] [backdate?] = Record your sleep (hours)\n"\
-        "/happiness [0-10] [backdate?] = Record your happiness level (0 low, 10 high)\n"\
-        "/exercise [description] [backdate?] = Log your exercise\n"\
-        "/fasting [hours] [backdate?] = Record your fasting session (decimals allowed)\n"\
-        "/journal [entry] [backdate?] = Log a journal entry (Either publicly or in private to @zenafbot)\n"\
+        "/anxiety \[0-10] \[backdate?] = Record your anxiety level (0 low, 10 high)\n"\
+        "/exercise \[description] \[backdate?] = Log your exercise\n"\
+        "/fasting \[hours] \[backdate?] = Record your fasting session (decimals allowed)\n"\
+        "/happiness \[0-10] \[backdate?] = Record your happiness level (0 low, 10 high)\n"\
+        "/journal \[entry] \[backdate?] = Log a journal entry (Either publicly or in private to @zenafbot)\n"\
+        "/meditate \[minutes] \[backdate?] = Record your meditation (5 mins. minimum)\n"\
+        "/sleep \[0-24] \[backdate?] = Record your sleep (hours)\n"\
         "\n"\
-        "[period] = either `weekly`, `biweekly`, `monthly` or `all`\n"\
-        "/meditatestats [period] = Graph of your meditation history\n"\
-        "/anxietystats [period] = Graph of your anxiety levels\n"\
-        "/sleepstats [period] = Graph of your sleep history\n"\
-        "/happystats [period] = Graph of your happiness levels\n"\
-        "/journalentries [day-month-year] = Retrieve journal entries from date (eg. /journalentries 22-MARCH-2018)"
+        "`[period]` = either `weekly`, `biweekly`, `monthly` or `all`\n"\
+        "/anxietystats \[period] = Graph of your anxiety levels\n"\
+        "/happystats \[period] = Graph of your happiness levels\n"\
+        "/journalentries \[dd-mm-yyyy] = Retrieve journal entries from date (eg. /journalentries 22-MARCH-2018)\n"\
+        "/meditatestats \[period] = Graph of your meditation history\n"\
+        "/sleepstats \[period] = Graph of your sleep history"
 
     try:
         bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
