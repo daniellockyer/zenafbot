@@ -51,9 +51,12 @@ def get_top(count):
     get_connection().commit()
     return results
 
-def add_to_table(table, user_id, value):
+def add_to_table(table, user_id, value, backdate=None):
     cursor = get_connection().cursor()
-    cursor.execute(sql.SQL("INSERT INTO {} (id, value) VALUES (%s, %s)").format(sql.Identifier(table)), (user_id, value))
+    if backdate:
+        cursor.execute(sql.SQL("INSERT INTO {} (id, value, created_at) VALUES (%s, %s, %s)").format(sql.Identifier(table)), (user_id, value, backdate))
+    else:
+        cursor.execute(sql.SQL("INSERT INTO {} (id, value) VALUES (%s, %s)").format(sql.Identifier(table)), (user_id, value))
     get_connection().commit()
     cursor.close()
 

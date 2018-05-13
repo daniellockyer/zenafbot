@@ -28,22 +28,28 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 def help_message(bot, update):
     message = \
+        "[backdate?] means that a command supports recording entries for the past.\n"\
+        "Example: /meditate 10 22-MARCH-2018.\n"\
+        "This will log a meditation of 10 minutes on the 22nd of March, "\
+        "useful for when you forget to log something. "\
+        "Including this date is completely optional.\n"\
+        "\n"\
         "/top = Shows top 5 people with the highest meditation count\n"\
         "/groupstats = Graph of total meditation time by the group\n"\
         "\n"\
-        "/meditate [minutes] = Record your meditation (5 mins. minimum)\n"\
-        "/anxiety [0-10] = Record your anxiety level (0 low, 10 high)\n"\
-        "/sleep [0-24] = Record your sleep (hours)\n"\
-        "/happiness [0-10] = Record your happiness level (0 low, 10 high)\n"\
-        "/exercise [description] = Log your exercise\n"\
-        "/fasting [hours] = Record your fasting session (decimals allowed)\n"\
-        "/journal [entry] = Log a journal entry (Either publicly or in private to @zenafbot)\n"\
+        "/meditate [minutes] [backdate?] = Record your meditation (5 mins. minimum)\n"\
+        "/anxiety [0-10] [backdate?] = Record your anxiety level (0 low, 10 high)\n"\
+        "/sleep [0-24] [backdate?] = Record your sleep (hours)\n"\
+        "/happiness [0-10] [backdate?] = Record your happiness level (0 low, 10 high)\n"\
+        "/exercise [description] [backdate?] = Log your exercise\n"\
+        "/fasting [hours] [backdate?] = Record your fasting session (decimals allowed)\n"\
+        "/journal [entry] [backdate?] = Log a journal entry (Either publicly or in private to @zenafbot)\n"\
         "\n"\
         "/meditatestats [weekly|biweekly|monthly|all] = Graph of your meditation history\n"\
         "/anxietystats [weekly|biweekly|monthly|all] = Graph of your anxiety levels\n"\
         "/sleepstats [weekly|biweekly|monthly|all] = Graph of your sleep history\n"\
         "/happystats [weekly|biweekly|monthly|all] = Graph of your happiness levels\n"\
-        "/journalentries day-month-year = Retrieve journal entries (eg. /journalentries 22-MARCH-2018)"
+        "/journalentries [day-month-year] = Retrieve journal entries from date (eg. /journalentries 22-MARCH-2018)"
 
     try:
         bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
@@ -66,14 +72,14 @@ def pm(bot, update):
 
 def meditate(bot, update):
     def validation_callback(parts):
-        value = int(parts[1])
+        value = int(parts[0])
         if value < 5 or value > 1440:
             bot.send_message(chat_id=update.message.from_user.id, text="🙏 Meditation time must be between 5 and 1440 minutes. 🙏")
             return False
         return value
 
-    def success_callback(name_to_show, value, update):
-        bot.send_message(chat_id=update.message.chat.id, text="✅ {} meditated for {} minutes 🙏".format(name_to_show, value))
+    def success_callback(name_to_show, value, update, historic_date):
+        bot.send_message(chat_id=update.message.chat.id, text="✅ {} meditated for {} minutes{} 🙏".format(name_to_show, value, historic_date))
         db.increase_streak_of(update.message.from_user.id)
 
     delete_and_send(bot, update, validation_callback, success_callback, {
@@ -95,8 +101,8 @@ def schedulereminders(bot, update):
         return True
 
     new_parts = []
-    if parts[len(parts) - 1] in all_timezones:
-        tz = timezone(parts[len(parts) - 1])
+    if parts[-1] in all_timezones:
+        tz = timezone(parts[-1])
         for i in range(1, len(parts) - 1):
             part = parts[i]
             if not re.match('((([1-9])|(1[0-2]))(AM|PM|am|pm))', part):
@@ -164,13 +170,13 @@ def find_rating_change(table, user_id, new_value):
 
 def anxiety(bot, update):
     def validation_callback(parts):
-        value = int(parts[1])
+        value = int(parts[0])
         if value < 0 or value > 10:
             bot.send_message(chat_id=update.message.from_user.id, text="Please rate your anxiety between 0 (low) and 10 (high).")
             return False
         return value
 
-    def success_callback(name_to_show, value, update):
+    def success_callback(name_to_show, value, update, historic_date):
         if value >= 9:
             emoji = "😭"
         elif value >= 7:
@@ -184,7 +190,7 @@ def anxiety(bot, update):
 
         difference = find_rating_change("anxiety", update.message.from_user.id, value)
         bot.send_message(chat_id=update.message.chat.id,
-                         text="{} {} rated their anxiety at {}{} {}".format(emoji, name_to_show, value, difference, emoji))
+                         text="{} {} rated their anxiety at {}{}{} {}".format(emoji, name_to_show, value, difference, historic_date, emoji))
 
     delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "anxiety",
@@ -194,13 +200,13 @@ def anxiety(bot, update):
 
 def happiness(bot, update):
     def validation_callback(parts):
-        value = int(parts[1])
+        value = int(parts[0])
         if value < 0 or value > 10:
             bot.send_message(chat_id=update.message.from_user.id, text="Please rate your happiness level 0-10")
             return False
         return value
 
-    def success_callback(name_to_show, value, update):
+    def success_callback(name_to_show, value, update, historic_date):
         if value >= 9:
             emoji = "😎"
         elif value >= 7:
@@ -218,7 +224,7 @@ def happiness(bot, update):
 
         difference = find_rating_change("happiness", update.message.from_user.id, value)
         bot.send_message(chat_id=update.message.chat.id,
-                         text="{} {} rated their happiness at {}{} {}".format(emoji, name_to_show, value, difference, emoji))
+                         text="{} {} rated their happiness at {}{}{} {}".format(emoji, name_to_show, value, difference, historic_date, emoji))
 
     delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "happiness",
@@ -228,14 +234,14 @@ def happiness(bot, update):
 
 def sleep(bot, update):
     def validation_callback(parts):
-        value = float(parts[1])
+        value = float(parts[0])
         if value < 0 or value > 24:
             bot.send_message(chat_id=update.message.from_user.id, text="💤 Please give how many hours you slept. 💤")
             return False
         return value
 
-    def success_callback(name_to_show, value, update):
-        bot.send_message(chat_id=update.message.chat.id, text="✅ {} slept for {} hours 💤".format(name_to_show, value))
+    def success_callback(name_to_show, value, update, historic_date):
+        bot.send_message(chat_id=update.message.chat.id, text="✅ {} slept for {} hours{} 💤".format(name_to_show, value, historic_date))
 
     delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "sleep",
@@ -245,14 +251,14 @@ def sleep(bot, update):
 
 def fasting(bot, update):
     def validation_callback(parts):
-        value = float(parts[1])
+        value = float(parts[0])
         if value < 0:
             bot.send_message(chat_id=update.message.from_user.id, text="🍽 Please give how many hours you fasted for. 🍽")
             return False
         return value
 
-    def success_callback(name_to_show, value, update):
-        bot.send_message(chat_id=update.message.chat.id, text="✅ {} fasted for {} hours 🍽".format(name_to_show, value))
+    def success_callback(name_to_show, value, update, historic_date):
+        bot.send_message(chat_id=update.message.chat.id, text="✅ {} fasted for {} hours{} 🍽".format(name_to_show, value, historic_date))
 
     delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "fasting",
@@ -262,7 +268,6 @@ def fasting(bot, update):
 
 def exercise(bot, update):
     def validation_callback(parts):
-        del parts[0]
         activity = " ".join(parts)
         activity_len = len(activity)
         if activity_len == 0 or activity_len > 4000:
@@ -270,8 +275,8 @@ def exercise(bot, update):
             return False
         return activity
 
-    def success_callback(name_to_show, value, update):
-        bot.send_message(chat_id=update.message.chat.id, text="✅ {} just exercised: {}".format(name_to_show, value))
+    def success_callback(name_to_show, value, update, historic_date):
+        bot.send_message(chat_id=update.message.chat.id, text="✅ {} exercised{}: {}".format(name_to_show, historic_date, value))
 
     delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "exercise",
@@ -295,7 +300,6 @@ def rest(bot, update):
 def journaladd(bot, update):
     def validation_callback(parts):
         # String will always fit in db as db stores as much as max length for telegram message
-        del parts[0]
         journalentry = " ".join(parts)
         journalentry_len = len(journalentry)
         if journalentry_len == 0 or journalentry_len > 4000:
@@ -303,8 +307,8 @@ def journaladd(bot, update):
             return False
         return journalentry
 
-    def success_callback(name_to_show, _, update):
-        bot.send_message(chat_id=update.message.chat.id, text="✅ {} logged a journal entry! ✏️".format(name_to_show))
+    def success_callback(name_to_show, _, update, historic_date):
+        bot.send_message(chat_id=update.message.chat.id, text="✅ {} logged a journal entry{}! ✏️".format(name_to_show, historic_date))
 
     delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "journal",
@@ -317,7 +321,6 @@ def journallookup(bot, update):
     user_id = update.message.from_user.id
     username = get_name(update.message.from_user)
     parts = update.message.text.split(' ')
-    del parts[0]
     datestring = " ".join(parts)
 
     # Parse the string - prefer DMY to MDY - most of world uses DMY
@@ -365,15 +368,28 @@ def top(bot, update):
     message = '\n'.join(line)
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
-def delete_and_send(bot, update, validation_callback, success_callback, strings):
+def delete_and_send(bot, update, validation_callback, success_callback, strings, backdate=None):
     get_or_create_user(bot, update)
     parts = update.message.text.split(' ')
-    if len(parts) < 2:
+    #No command needs parts[0] as it's just the name of the command to be executed.
+    parts = parts[1:]
+    if len(parts) < 1:
         bot.send_message(chat_id=update.message.from_user.id, text=strings["wrong_length"])
         return
 
     with open("messages.log", "a") as f:
         f.write(str(update) + "\n")
+
+    #ALLOW A USER TO BACKDATE THEIR RECORD
+    if len(parts) > 1:
+        #Try to parse the last 'word' of the user input (eg 24-12-2017)
+        #This will allow the user to backdate the message
+        #If the parsing fails, they probably didn't try to backdate;
+        #instead they entered a real word (or made a typo).
+        backdate = dateparser.parse(parts[-1], settings={'DATE_ORDER': 'DMY', 'STRICT_PARSING': True})
+        #If they backdated, remove the parsed date word so it doesn't show up in the journal, exercise, etc
+        if backdate is not None:
+            parts = parts[:-1]
 
     try:
         value = validation_callback(parts)
@@ -383,7 +399,7 @@ def delete_and_send(bot, update, validation_callback, success_callback, strings)
         bot.send_message(chat_id=update.message.from_user.id, text=strings["value_error"])
         return
 
-    db.add_to_table(strings["table_name"], update.message.from_user.id, value)
+    db.add_to_table(strings["table_name"], update.message.from_user.id, value, backdate)
     try:
         bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
     except BadRequest:
@@ -391,7 +407,8 @@ def delete_and_send(bot, update, validation_callback, success_callback, strings)
 
     user = update.message.from_user
     name_to_show = get_name(user)
-    success_callback(name_to_show, value, update)
+    historic_date = "" if backdate is None else " on " + backdate.isoformat()
+    success_callback(name_to_show, value, update, historic_date)
 
 def get_or_create_user(bot, update):
     user = update.message.from_user
