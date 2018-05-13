@@ -57,7 +57,7 @@ def help_message(bot, update):
     except BadRequest:
         pass
 
-    bot.send_message(chat_id=update.message.chat_id, text=message)
+    bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=message)
 
 def pm(bot, update):
     user = get_or_create_user(bot, update)
