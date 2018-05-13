@@ -45,10 +45,11 @@ def help_message(bot, update):
         "/fasting [hours] [backdate?] = Record your fasting session (decimals allowed)\n"\
         "/journal [entry] [backdate?] = Log a journal entry (Either publicly or in private to @zenafbot)\n"\
         "\n"\
-        "/meditatestats [weekly|biweekly|monthly|all] = Graph of your meditation history\n"\
-        "/anxietystats [weekly|biweekly|monthly|all] = Graph of your anxiety levels\n"\
-        "/sleepstats [weekly|biweekly|monthly|all] = Graph of your sleep history\n"\
-        "/happystats [weekly|biweekly|monthly|all] = Graph of your happiness levels\n"\
+        "[period] = either `weekly`, `biweekly`, `monthly` or `all`\n"\
+        "/meditatestats [period] = Graph of your meditation history\n"\
+        "/anxietystats [period] = Graph of your anxiety levels\n"\
+        "/sleepstats [period] = Graph of your sleep history\n"\
+        "/happystats [period] = Graph of your happiness levels\n"\
         "/journalentries [day-month-year] = Retrieve journal entries from date (eg. /journalentries 22-MARCH-2018)"
 
     try:
