@@ -28,28 +28,41 @@ def set_has_pmed(user_id):
     get_connection().commit()
     cursor.close()
 
-def increase_streak_of(user_id):
-    cursor = get_connection().cursor()
-    cursor.execute('UPDATE users SET streak = streak + 1 WHERE id = %s', (user_id,))
-    get_connection().commit()
-    cursor.close()
-
 def get_streak_of(user_id):
     cursor = get_connection().cursor()
-    cursor.execute('SELECT streak FROM users WHERE id = %s', (user_id,))
-    result = cursor.fetchone()
-    get_connection().commit()
-    return result[0]
-
-def get_top(count):
-    cursor = get_connection().cursor()
     cursor.execute(
-        'SELECT first_name, last_name, username, streak FROM users ORDER BY streak DESC LIMIT %s',
-        (count,)
+        sql.SQL(
+            "WITH t AS ("\
+                "SELECT distinct(meditation.created_at::date) as created_at"\
+                "FROM meditation"\
+                "WHERE id = %s"\
+            ")"\
+            "SELECT count(*) FROM t WHERE t.created_at > ("\
+                "SELECT d.d"\
+                "from generate_series('2018-01-01'::date, TIMESTAMP 'yesterday'::date, '1 day') d(d)"\
+                "left outer join t on t.created_at = d.d::date"\
+                "where t.created_at is null"\
+                "order by d.d desc"\
+                "limit 1"\
+            ")"
+        ), (user_id,)
     )
     results = cursor.fetchall()
     get_connection().commit()
-    return results
+    return results[0]
+
+#Not sure that a single nice SQL expression is possible for this now
+def get_top(count):
+    results = []
+    cursor = get_connection().cursor()
+    cursor.execute("SELECT * FROM users;")
+    users = cursor.fetchall()
+    get_connection().commit()
+    for user in users:
+        streak = get_streak_of(user[0])
+        results.append((user[1], user[2], user[3], streak))
+    results.sort(key=lambda x: x[3], reverse=True)
+    return results[:count]
 
 def add_to_table(table, user_id, value, backdate=None):
     cursor = get_connection().cursor()
