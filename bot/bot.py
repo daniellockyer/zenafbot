@@ -75,7 +75,6 @@ def meditate(bot, update):
 
     def success_callback(name_to_show, value, update, historic_date):
         bot.send_message(chat_id=update.message.chat.id, text="✅ {} meditated for {} minutes{} 🙏".format(name_to_show, value, historic_date))
-        db.increase_streak_of(update.message.from_user.id)
 
     delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "meditation",
@@ -363,6 +362,26 @@ def top(bot, update):
     message = '\n'.join(line)
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
+def streak(bot, update):
+    get_or_create_user(bot, update)
+    user_id = update.message.from_user.id
+    streak = db.get_streak_of(user_id)
+
+    if streak == 0:
+        emoji = "🤔"
+    elif streak < 50:
+        emoji = "🔥"
+    else:
+        emoji = "🌶️"
+
+    try:
+        bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
+    except BadRequest:
+        pass
+
+    name_to_show = get_name(update.message.from_user)
+    bot.send_message(chat_id=update.message.chat.id, text="{} has a streak of {}! {}".format(name_to_show,streak,emoji))
+
 def delete_and_send(bot, update, validation_callback, success_callback, strings, backdate=None):
     get_or_create_user(bot, update)
     parts = update.message.text.split(' ')
@@ -582,7 +601,6 @@ cursor.execute("CREATE TABLE IF NOT EXISTS users(\
     first_name text NOT NULL,\
     last_name text,\
     username text,\
-    streak INTEGER NOT NULL DEFAULT 0,\
     haspm boolean DEFAULT FALSE\
 );")
 
@@ -655,6 +673,7 @@ DISPATCHER.add_handler(CommandHandler('meditatestats', stats))
 DISPATCHER.add_handler(CommandHandler('sleep', sleep))
 DISPATCHER.add_handler(CommandHandler('sleepstats', stats))
 DISPATCHER.add_handler(CommandHandler('top', top))
+DISPATCHER.add_handler(CommandHandler('streak', streak))
 DISPATCHER.add_handler(CommandHandler('groupstats', stats))
 DISPATCHER.add_handler(CommandHandler('happiness', happiness))
 # Next two are synonyms as 'happinessstats' is weird AF
