@@ -33,16 +33,16 @@ def get_streak_of(user_id):
     cursor.execute(
         sql.SQL(
             "WITH t AS ("\
-                "SELECT distinct(meditation.created_at::date) as created_at"\
-                "FROM meditation"\
+                "SELECT distinct(meditation.created_at::date) as created_at "\
+                "FROM meditation "\
                 "WHERE id = %s"\
             ")"\
             "SELECT count(*) FROM t WHERE t.created_at > ("\
-                "SELECT d.d"\
-                "from generate_series('2018-01-01'::date, TIMESTAMP 'yesterday'::date, '1 day') d(d)"\
-                "left outer join t on t.created_at = d.d::date"\
-                "where t.created_at is null"\
-                "order by d.d desc"\
+                "SELECT d.d "\
+                "from generate_series('2018-01-01'::date, TIMESTAMP 'yesterday'::date, '1 day') d(d) "\
+                "left outer join t on t.created_at = d.d::date "\
+                "where t.created_at is null "\
+                "order by d.d desc "\
                 "limit 1"\
             ")"
         ), (user_id,)
