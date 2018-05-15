@@ -25,7 +25,8 @@ JOBQUEUE = UPDATER.job_queue
 
 def help_message(bot, update):
     message = \
-        "/top = Shows top 5 people with the highest meditation count\n"\
+        "/top = Shows top 5 people with the highest meditation streak\n"\
+        "/streak = Shows your current meditation streak\n"\
         "/groupstats = Graph of total meditation time by the group\n"\
         "\n"\
         "`[backdate?]` means that a command supports recording entries for the past (eg. `/meditate 10 22-MARCH-2018.`) "\
@@ -53,6 +54,14 @@ def help_message(bot, update):
 
     bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=message)
 
+def get_streak_emoji(streak):
+    if streak == 0:
+        return "🤔"
+    elif streak < 50:
+        return "🔥"
+    else:
+        return "🌶️"
+
 def pm(bot, update):
     user = get_or_create_user(bot, update)
     has_pm_bot = user[5]
@@ -74,7 +83,9 @@ def meditate(bot, update):
         return value
 
     def success_callback(name_to_show, value, update, historic_date):
-        bot.send_message(chat_id=update.message.chat.id, text="✅ {} meditated for {} minutes{} 🙏".format(name_to_show, value, historic_date))
+        streak = db.get_streak_of(update.message.from_user.id)
+        emoji = get_streak_emoji(streak)
+        bot.send_message(chat_id=update.message.chat.id, text="✅ {} meditated for {} minutes{} ({}{}) 🙏".format(name_to_show, value, historic_date, streak, emoji))
 
     delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "meditation",
@@ -349,6 +360,7 @@ def top(bot, update):
         last_name = user[1]
         username = user[2]
         streak = user[3]
+        emoji = get_streak_emoji(streak)
 
         if username:
             name_to_show = username
@@ -357,22 +369,20 @@ def top(bot, update):
             if last_name:
                 name_to_show += f' {last_name}'
 
-        line.append(f'{i + 1}. {name_to_show}   ({streak}🔥)')
+        line.append(f'{i + 1}. {name_to_show}   ({streak}{emoji})')
 
     message = '\n'.join(line)
+    try:
+        bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
+    except BadRequest:
+        pass
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
 def streak(bot, update):
     get_or_create_user(bot, update)
     user_id = update.message.from_user.id
     streak = db.get_streak_of(user_id)
-
-    if streak == 0:
-        emoji = "🤔"
-    elif streak < 50:
-        emoji = "🔥"
-    else:
-        emoji = "🌶️"
+    emoji = get_streak_emoji(streak)
 
     try:
         bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
