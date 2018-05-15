@@ -390,7 +390,7 @@ def streak(bot, update):
         pass
 
     name_to_show = get_name(update.message.from_user)
-    bot.send_message(chat_id=update.message.chat.id, text="{} has a streak of {}! {}".format(name_to_show,streak,emoji))
+    bot.send_message(chat_id=update.message.chat.id, text="{} has a meditation streak of {}! {}".format(name_to_show,streak,emoji))
 
 def delete_and_send(bot, update, validation_callback, success_callback, strings, backdate=None):
     get_or_create_user(bot, update)
