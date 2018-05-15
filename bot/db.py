@@ -49,7 +49,7 @@ def get_streak_of(user_id):
     )
     results = cursor.fetchall()
     get_connection().commit()
-    return results[0]
+    return results[0][0]
 
 #Not sure that a single nice SQL expression is possible for this now
 def get_top(count):
