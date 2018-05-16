@@ -27,7 +27,6 @@ def help_message(bot, update):
     message = \
         "/top = Shows top 5 people with the highest meditation streak\n"\
         "/streak = Shows your current meditation streak\n"\
-        "/groupstats = Graph of total meditation time by the group\n"\
         "\n"\
         "`[backdate?]` means that a command supports recording entries for the past (eg. `/meditate 10 22-MARCH-2018.`) "\
         "This will log a 10 minutes meditation on March 22nd, useful for when you forget to log something. "\
@@ -42,6 +41,7 @@ def help_message(bot, update):
         "\n"\
         "`[period]` = either `weekly`, `biweekly`, `monthly` or `all`\n"\
         "/anxietystats \[period] = Graph of your anxiety levels\n"\
+        "/groupstats \[period] = Total meditation time by the group\n"\
         "/happystats \[period] = Graph of your happiness levels\n"\
         "/journalentries \[dd-mm-yyyy] = Retrieve journal entries from date\n"\
         "/meditatestats \[period] = Graph of your meditation history\n"\
