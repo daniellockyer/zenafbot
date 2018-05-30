@@ -411,10 +411,22 @@ def delete_and_send(bot, update, validation_callback, success_callback, strings,
         #If the parsing fails, they probably didn't try to backdate;
         #instead they entered a real word (or made a typo).
         backdate = dateparser.parse(parts[-1], settings={'DATE_ORDER': 'DMY', 'STRICT_PARSING': True})
-        #If they backdated, remove the parsed date word so it doesn't show up in the journal, exercise, etc
-        if backdate is not None:
+
+        #Stop users from accidentally logging at a time they didn't want.
+        #Limit the backdate feature to the last month only.
+        now = datetime.datetime.now()
+        month_ago = get_x_days_before(now, 31)
+        if backdate is None:
+            pass
+        elif month_ago.date() <= backdate.date() <= now.date():
+            #If they backdated, remove the parsed date word so it doesn't show up in the journal, exercise, etc
             parts = parts[:-1]
             backdate = backdate.replace(hour=12)
+        else:
+            # Error, the backdate was parsed but was not in the appropriate date range
+            backdate_err = "The backdated date {} (from `{}`) did not take place in the last month.".format(backdate.date().isoformat(),parts[-1]) 
+            bot.send_message(chat_id=update.message.from_user.id, text=backdate_err)
+            return
 
     try:
         value = validation_callback(parts)
