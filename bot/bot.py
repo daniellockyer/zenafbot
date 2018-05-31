@@ -124,8 +124,7 @@ def help_message(bot, update):
         "/streak = Shows your current meditation streak\n"\
         "\n"\
         "`[backdate?]` means that a command supports recording entries for the past (eg. `/meditate 10 22-MARCH-2018.`) "\
-        "This will log a 10 minutes meditation on March 22nd, useful for when you forget to log something. "\
-        "Including this is completely optional.\n"\
+        "This is useful for when you forget to log something. Including this is completely optional.\n"\
         "/anxiety \[0-10] \[backdate?] = Anxiety level (0 low, 10 high)\n"\
         "/exercise \[description] \[backdate?] = Log your exercise\n"\
         "/fasting \[hours] \[backdate?] = Your fasting session\n"\
