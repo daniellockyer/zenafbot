@@ -732,9 +732,6 @@ cursor.execute("CREATE TABLE IF NOT EXISTS happiness(\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
-# 4096 is max length of a telegram message;
-# We should store 4000 to give us some room when sending the user a
-# journal message they have recalled.
 cursor.execute("CREATE TABLE IF NOT EXISTS journal(\
     id INTEGER NOT NULL REFERENCES users(id),\
     value varchar(4096) NOT NULL,\
@@ -750,33 +747,29 @@ cursor.execute("CREATE TABLE IF NOT EXISTS exercise(\
 get_connection().commit()
 cursor.close()
 
-DISPATCHER.add_handler(CommandHandler('help', help_message))
-
-DISPATCHER.add_handler(CommandHandler('fast', fasting))
-DISPATCHER.add_handler(CommandHandler('fasting', fasting))
 DISPATCHER.add_handler(CommandHandler('anxiety', anxiety))
 DISPATCHER.add_handler(CommandHandler('anxietystats', stats))
 DISPATCHER.add_handler(CommandHandler('exercise', exercise))
-DISPATCHER.add_handler(CommandHandler('rest', rest))
+DISPATCHER.add_handler(CommandHandler('fast', fasting))
+DISPATCHER.add_handler(CommandHandler('fasting', fasting))
+DISPATCHER.add_handler(CommandHandler('groupstats', stats))
+DISPATCHER.add_handler(CommandHandler('happinessstats', stats))
+DISPATCHER.add_handler(CommandHandler('happiness', happiness))
+DISPATCHER.add_handler(CommandHandler('happystats', stats))
+DISPATCHER.add_handler(CommandHandler('help', help_message))
+DISPATCHER.add_handler(CommandHandler('journal', journaladd))
+DISPATCHER.add_handler(CommandHandler('journalentries', journallookup))
 DISPATCHER.add_handler(CommandHandler('meditate', meditate))
 DISPATCHER.add_handler(CommandHandler('meditation', meditate))
 DISPATCHER.add_handler(CommandHandler('meditatestats', stats))
+DISPATCHER.add_handler(CommandHandler('reminders', schedulereminders))
+DISPATCHER.add_handler(CommandHandler('rest', rest))
 DISPATCHER.add_handler(CommandHandler('sleep', sleep))
 DISPATCHER.add_handler(CommandHandler('sleepstats', stats))
-DISPATCHER.add_handler(CommandHandler('top', top))
 DISPATCHER.add_handler(CommandHandler('streak', streak))
-DISPATCHER.add_handler(CommandHandler('groupstats', stats))
-DISPATCHER.add_handler(CommandHandler('happiness', happiness))
-# Next two are synonyms as 'happinessstats' is weird AF
-DISPATCHER.add_handler(CommandHandler('happystats', stats))
-DISPATCHER.add_handler(CommandHandler('happinessstats', stats))
-DISPATCHER.add_handler(CommandHandler('journal', journaladd))
-DISPATCHER.add_handler(CommandHandler('journalentries', journallookup))
-DISPATCHER.add_handler(CommandHandler('reminders', schedulereminders))
-# Respond to private messages
+DISPATCHER.add_handler(CommandHandler('top', top))
 DISPATCHER.add_handler(MessageHandler(Filters.private, pm))
 
-# Run the function on every hour to remind people to meditate
 JOBQUEUE.run_repeating(executereminders, interval=3600, first=time_until_next_hour()+10)
 
 UPDATER.start_polling()
