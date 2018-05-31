@@ -10,10 +10,10 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import psycopg2
+from psycopg2 import sql
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram.error import BadRequest
-
-import db
 
 TOKEN = os.environ.get('BOT_TOKEN', None)
 if TOKEN is None:
@@ -22,6 +22,95 @@ if TOKEN is None:
 UPDATER = Updater(token=TOKEN)
 DISPATCHER = UPDATER.dispatcher
 JOBQUEUE = UPDATER.job_queue
+
+CONNECTION = None
+DB_NAME = os.environ.get('DB_NAME', 'zenirlbot')
+DB_USER = os.environ.get('DB_USER', 'postgres')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'password')
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
+
+def get_connection():
+    global CONNECTION
+
+    if not CONNECTION or CONNECTION.closed != 0:
+        CONNECTION = psycopg2.connect(
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST,
+            port="5432"
+        )
+
+    return CONNECTION
+
+def set_has_pmed(user_id):
+    cursor = get_connection().cursor()
+    cursor.execute('UPDATE users SET haspm = TRUE WHERE id = %s', (user_id,))
+    get_connection().commit()
+    cursor.close()
+
+def get_streak_of(user_id):
+    cursor = get_connection().cursor()
+    cursor.execute(
+        sql.SQL(
+            "WITH t AS ("\
+                "SELECT distinct(meditation.created_at::date) as created_at "\
+                "FROM meditation "\
+                "WHERE id = %s"\
+            ")"\
+            "SELECT count(*) FROM t WHERE t.created_at > ("\
+                "SELECT d.d "\
+                "from generate_series('2018-01-01'::date, TIMESTAMP 'yesterday'::date, '1 day') d(d) "\
+                "left outer join t on t.created_at = d.d::date "\
+                "where t.created_at is null "\
+                "order by d.d desc "\
+                "limit 1"\
+            ")"
+        ), (user_id,)
+    )
+    results = cursor.fetchall()
+    get_connection().commit()
+    return results[0][0]
+
+#Not sure that a single nice SQL expression is possible for this now
+def get_top(count):
+    results = []
+    cursor = get_connection().cursor()
+    cursor.execute("SELECT * FROM users;")
+    users = cursor.fetchall()
+    get_connection().commit()
+    for user in users:
+        streak = get_streak_of(user[0])
+        results.append((user[1], user[2], user[3], streak))
+    results.sort(key=lambda x: x[3], reverse=True)
+    return results[:count]
+
+def add_to_table(table, user_id, value, backdate=None):
+    cursor = get_connection().cursor()
+    if backdate:
+        cursor.execute(sql.SQL("INSERT INTO {} (id, value, created_at) VALUES (%s, %s, %s)").format(sql.Identifier(table)), (user_id, value, backdate))
+    else:
+        cursor.execute(sql.SQL("INSERT INTO {} (id, value) VALUES (%s, %s)").format(sql.Identifier(table)), (user_id, value))
+    get_connection().commit()
+    cursor.close()
+
+def add_meditation_reminder(user_id, value, midnight):
+    cursor = get_connection().cursor()
+    cursor.execute("INSERT INTO meditationreminders (id, value, midnight) VALUES (%s, %s, %s)", (user_id, value, midnight))
+    get_connection().commit()
+    cursor.close()
+
+def get_values(table, start_date=None, end_date=None, user_id=None, value=None):
+    cursor = get_connection().cursor()
+    query = sql.SQL("SELECT * FROM {} WHERE "\
+                    "(%s is NULL OR id = %s) "\
+                    "AND (%s is NULL OR created_at > %s) "\
+                    "AND (%s is NULL OR created_at < %s) "\
+                    "AND (%s is NULL OR value = %s);").format(sql.Identifier(table))
+    cursor.execute(query, (user_id, user_id, start_date, start_date, end_date, end_date, value, value))
+    results = cursor.fetchall()
+    get_connection().commit()
+    return results
 
 def help_message(bot, update):
     message = \
@@ -68,7 +157,7 @@ def pm(bot, update):
     if has_pm_bot is True:
         bot.send_message(chat_id=update.message.from_user.id, text="Sorry, I didn't understand that!")
     else:
-        db.set_has_pmed(update.message.from_user.id)
+        set_has_pmed(update.message.from_user.id)
         bot.send_message(chat_id=update.message.from_user.id, text="Thanks for PMing me! 👋 Now I can PM you too! " \
             "📨 Please don't delete this chat or I won't be able PM you anymore. 😢 " \
             "Any command that you can perform with me in the Mindful Makers channel can also be ran here! " \
@@ -83,7 +172,7 @@ def meditate(bot, update):
         return value
 
     def success_callback(name_to_show, value, update, historic_date):
-        streak = db.get_streak_of(update.message.from_user.id)
+        streak = get_streak_of(update.message.from_user.id)
         emoji = get_streak_emoji(streak)
         bot.send_message(chat_id=update.message.chat.id, text="✅ {} meditated for {} minutes{} ({}{}) 🙏".format(name_to_show, value, historic_date, streak, emoji))
 
@@ -97,7 +186,7 @@ def schedulereminders(bot, update):
     parts = update.message.text.split(' ')
     if len(parts) == 2 and parts[1] == "off":
         # Delete is too powerful to have as a generalised function
-        conn = db.get_connection()
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute('DELETE FROM meditationreminders WHERE id = %s', (update.message.from_user.id,))
         conn.commit()
@@ -133,7 +222,7 @@ def schedulereminders(bot, update):
 
     user = get_or_create_user(bot, update)
     for hours in new_parts:
-        db.add_meditation_reminder(update.message.from_user.id, hours[0], hours[1])
+        add_meditation_reminder(update.message.from_user.id, hours[0], hours[1])
     username = get_name(update.message.from_user)
     has_pm_bot = user[5]
     if has_pm_bot is True:
@@ -144,7 +233,7 @@ def schedulereminders(bot, update):
 
 def executereminders(bot, _):
     now = datetime.datetime.now()
-    users_to_notify = db.get_values("meditationreminders", value=now.hour)
+    users_to_notify = get_values("meditationreminders", value=now.hour)
     for user in users_to_notify:
         user_id = user[0]
         user_midnight_utc = user[2] # Will be an int like 2, meaning midnight is at 2AM UTC for the user
@@ -155,7 +244,7 @@ def executereminders(bot, _):
             start_check_period = get_x_days_before(now, 1).replace(hour=user_midnight_utc, minute=0, second=0)
         else:
             start_check_period = now.replace(hour=user_midnight_utc, minute=0, second=0)
-        meditations = db.get_values("meditation", start_date=start_check_period, end_date=now, user_id=user_id)
+        meditations = get_values("meditation", start_date=start_check_period, end_date=now, user_id=user_id)
         meditations_len = len(meditations)
         if meditations_len == 0:
             bot.send_message(chat_id=user_id, text="Hey! You asked me to send you a private message to remind you to meditate! 🙏 "\
@@ -165,7 +254,7 @@ def find_rating_change(table, user_id, new_value):
     now = datetime.datetime.now()
     yesterday = get_x_days_before(now, 1)
     # We want to find change in rating between current value and most recent value in 24 last hours
-    ratings_last_day = db.get_values(table, start_date=yesterday, end_date=now, user_id=user_id)
+    ratings_last_day = get_values(table, start_date=yesterday, end_date=now, user_id=user_id)
     difference_str = ""
     if len(ratings_last_day) > 1:
         ratings_last_day.sort(key=lambda r: r[2], reverse=True)
@@ -291,7 +380,7 @@ def exercise(bot, update):
 
 def rest(bot, update):
     get_or_create_user(bot, update)
-    db.add_to_table("exercise", update.message.from_user.id, "rest")
+    add_to_table("exercise", update.message.from_user.id, "rest")
 
     try:
         bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
@@ -334,7 +423,7 @@ def journallookup(bot, update):
         dateinfo = dateinfo.date()
         start_of_day = datetime.datetime(dateinfo.year, dateinfo.month, dateinfo.day)
         end_of_day = start_of_day + datetime.timedelta(days=1)
-        entries = db.get_values("journal", start_date=start_of_day, end_date=end_of_day, user_id=user_id)
+        entries = get_values("journal", start_date=start_of_day, end_date=end_of_day, user_id=user_id)
         entries_len = len(entries)
 
         try:
@@ -353,7 +442,7 @@ def journallookup(bot, update):
 
 def top(bot, update):
     get_or_create_user(bot, update)
-    top_users = db.get_top(5)
+    top_users = get_top(5)
     line = []
     for i, user in enumerate(top_users):
         first_name = user[0]
@@ -381,7 +470,7 @@ def top(bot, update):
 def streak(bot, update):
     get_or_create_user(bot, update)
     user_id = update.message.from_user.id
-    streak = db.get_streak_of(user_id)
+    streak = get_streak_of(user_id)
     emoji = get_streak_emoji(streak)
 
     try:
@@ -436,7 +525,7 @@ def delete_and_send(bot, update, validation_callback, success_callback, strings,
         bot.send_message(chat_id=update.message.from_user.id, text=strings["value_error"])
         return
 
-    db.add_to_table(strings["table_name"], update.message.from_user.id, value, backdate)
+    add_to_table(strings["table_name"], update.message.from_user.id, value, backdate)
     try:
         bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
     except BadRequest:
@@ -449,7 +538,7 @@ def delete_and_send(bot, update, validation_callback, success_callback, strings,
 
 def get_or_create_user(bot, update):
     user = update.message.from_user
-    cursor = db.get_connection().cursor()
+    cursor = get_connection().cursor()
 
     cursor.execute('SELECT * FROM users WHERE id = %s', (user.id,))
     result = cursor.fetchone()
@@ -472,7 +561,7 @@ def get_or_create_user(bot, update):
         cursor.execute('SELECT * FROM users WHERE id = %s', (user.id,))
         result = cursor.fetchone()
 
-    db.get_connection().commit()
+    get_connection().commit()
     cursor.close()
     return result
 
@@ -541,7 +630,7 @@ def get_chart_x_limits(start_date, end_date, dates):
 def generate_timelog_report_from(table, filename, user, start_date, end_date, all_data=False):
     user_id = None if all_data else user.id
     username = "Group" if all_data else get_name(user)
-    results = db.get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
+    results = get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
 
     dates_to_value_mapping = defaultdict(int)
     for result in results:
@@ -580,7 +669,7 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
 def generate_linechart_report_from(table, filename, user, start_date, end_date):
     user_id = user.id
     username = get_name(user)
-    results = db.get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
+    results = get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
     results = sorted(results, key=lambda x: x[2])
 
     ratings = [x[1] for x in results]
@@ -616,7 +705,7 @@ def time_until_next_hour():
 
 #######################################################################################
 
-cursor = db.get_connection().cursor()
+cursor = get_connection().cursor()
 
 cursor.execute("CREATE TABLE IF NOT EXISTS users(\
     id INTEGER UNIQUE NOT NULL,\
@@ -678,7 +767,7 @@ cursor.execute("CREATE TABLE IF NOT EXISTS exercise(\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
-db.get_connection().commit()
+get_connection().commit()
 cursor.close()
 
 DISPATCHER.add_handler(CommandHandler('help', help_message))
