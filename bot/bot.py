@@ -479,7 +479,7 @@ def streak(bot, update):
         pass
 
     name_to_show = get_name(update.message.from_user)
-    bot.send_message(chat_id=update.message.chat.id, text="{} has a meditation streak of {}! {}".format(name_to_show,streak,emoji))
+    bot.send_message(chat_id=update.message.chat.id, text="{} has a meditation streak of {}! {}".format(name_to_show, streak, emoji))
 
 def delete_and_send(bot, update, validation_callback, success_callback, strings, backdate=None):
     get_or_create_user(bot, update)
@@ -513,7 +513,7 @@ def delete_and_send(bot, update, validation_callback, success_callback, strings,
             backdate = backdate.replace(hour=12)
         else:
             # Error, the backdate was parsed but was not in the appropriate date range
-            backdate_err = "The backdated date {} (from `{}`) did not take place in the last month.".format(backdate.date().isoformat(),parts[-1]) 
+            backdate_err = "The backdated date {} (from `{}`) did not take place in the last month.".format(backdate.date().isoformat(), parts[-1])
             bot.send_message(chat_id=update.message.from_user.id, text=backdate_err)
             return
 
