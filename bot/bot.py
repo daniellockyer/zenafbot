@@ -490,9 +490,6 @@ def delete_and_send(bot, update, validation_callback, success_callback, strings,
         bot.send_message(chat_id=update.message.from_user.id, text=strings["wrong_length"])
         return
 
-    with open("messages.log", "a") as f:
-        f.write(str(update) + "\n")
-
     #ALLOW A USER TO BACKDATE THEIR RECORD
     if len(parts) > 1:
         #Try to parse the last 'word' of the user input (eg 24-12-2017)
