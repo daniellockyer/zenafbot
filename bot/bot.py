@@ -112,6 +112,12 @@ def get_values(table, start_date=None, end_date=None, user_id=None, value=None):
     get_connection().commit()
     return results
 
+def delete_message(bot, chat_id, message_id):
+    try:
+        bot.deleteMessage(chat_id=chat_id, message_id=message_id)
+    except BadRequest:
+        pass
+
 def help_message(bot, update):
     message = \
         "/top = Shows top 5 people with the highest meditation streak\n"\
@@ -136,10 +142,7 @@ def help_message(bot, update):
         "/meditatestats \[period] = Graph of your meditation history\n"\
         "/sleepstats \[period] = Graph of your sleep history"
 
-    try:
-        bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
-    except BadRequest:
-        pass
+    delete_message(bot, update.message.chat.id, update.message.message_id)
 
     bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=message)
 
@@ -381,12 +384,7 @@ def exercise(bot, update):
 def rest(bot, update):
     get_or_create_user(bot, update)
     add_to_table("exercise", update.message.from_user.id, "rest")
-
-    try:
-        bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
-    except BadRequest:
-        pass
-
+    delete_message(bot, update.message.chat.id, update.message.message_id)
     name_to_show = get_name(update.message.from_user)
     bot.send_message(chat_id=update.message.chat.id, text="✅ {} is resting today!".format(name_to_show,))
 
@@ -426,10 +424,7 @@ def journallookup(bot, update):
         entries = get_values("journal", start_date=start_of_day, end_date=end_of_day, user_id=user_id)
         entries_len = len(entries)
 
-        try:
-            bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
-        except BadRequest:
-            pass
+        delete_message(bot, update.message.chat.id, update.message.message_id)
 
         if entries_len == 0:
             bot.send_message(chat_id=update.message.chat.id, text="📓 {} had no journal entries on {}. 📓".format(username, dateinfo.isoformat()))
@@ -461,10 +456,7 @@ def top(bot, update):
         line.append(f'{i + 1}. {name_to_show}   ({streak}{emoji})')
 
     message = '\n'.join(line)
-    try:
-        bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
-    except BadRequest:
-        pass
+    delete_message(bot, update.message.chat.id, update.message.message_id)
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
 def streak(bot, update):
@@ -473,10 +465,7 @@ def streak(bot, update):
     streak = get_streak_of(user_id)
     emoji = get_streak_emoji(streak)
 
-    try:
-        bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
-    except BadRequest:
-        pass
+    delete_message(bot, update.message.chat.id, update.message.message_id)
 
     name_to_show = get_name(update.message.from_user)
     bot.send_message(chat_id=update.message.chat.id, text="{} has a meditation streak of {}! {}".format(name_to_show, streak, emoji))
@@ -523,10 +512,7 @@ def delete_and_send(bot, update, validation_callback, success_callback, strings,
         return
 
     add_to_table(strings["table_name"], update.message.from_user.id, value, backdate)
-    try:
-        bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
-    except BadRequest:
-        pass
+    delete_message(bot, update.message.chat.id, update.message.message_id)
 
     user = update.message.from_user
     name_to_show = get_name(user)
@@ -606,10 +592,7 @@ def stats(bot, update):
     elif command == "/happinessstats" or command == "/happystats":
         generate_linechart_report_from("happiness", filename, user, start_date, now)
 
-    try:
-        bot.deleteMessage(chat_id=update.message.chat.id, message_id=update.message.message_id)
-    except BadRequest:
-        pass
+    delete_message(bot, update.message.chat.id, update.message.message_id)
 
     with open(filename, 'rb') as photo:
         bot.send_photo(chat_id=update.message.chat_id, photo=photo)
