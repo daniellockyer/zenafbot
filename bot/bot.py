@@ -43,12 +43,6 @@ def get_connection():
 
     return CONNECTION
 
-def set_has_pmed(user_id):
-    cursor = get_connection().cursor()
-    cursor.execute('UPDATE users SET haspm = TRUE WHERE id = %s', (user_id,))
-    get_connection().commit()
-    cursor.close()
-
 def get_streak_of(user_id):
     cursor = get_connection().cursor()
     cursor.execute(
@@ -159,7 +153,11 @@ def pm(bot, update):
     if has_pm_bot is True:
         bot.send_message(chat_id=update.message.from_user.id, text="Sorry, I didn't understand that!")
     else:
-        set_has_pmed(update.message.from_user.id)
+        cursor = get_connection().cursor()
+        cursor.execute('UPDATE users SET haspm = TRUE WHERE id = %s', (update.message.from_user.id,))
+        get_connection().commit()
+        cursor.close()
+
         bot.send_message(chat_id=update.message.from_user.id, text="Thanks for PMing me! 👋 Now I can PM you too! " \
             "📨 Please don't delete this chat or I won't be able PM you anymore. 😢 " \
             "Any command that you can perform with me in the Mindful Makers channel can also be ran here! " \
