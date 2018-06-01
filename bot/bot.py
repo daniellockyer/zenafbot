@@ -66,19 +66,6 @@ def get_streak_of(user_id):
     get_connection().commit()
     return results[0][0]
 
-#Not sure that a single nice SQL expression is possible for this now
-def get_top(count):
-    results = []
-    cursor = get_connection().cursor()
-    cursor.execute("SELECT * FROM users;")
-    users = cursor.fetchall()
-    get_connection().commit()
-    for user in users:
-        streak = get_streak_of(user[0])
-        results.append((user[1], user[2], user[3], streak))
-    results.sort(key=lambda x: x[3], reverse=True)
-    return results[:count]
-
 def add_to_table(table, user_id, value, backdate=None):
     cursor = get_connection().cursor()
     if backdate:
@@ -432,7 +419,20 @@ def journallookup(bot, update):
 
 def top(bot, update):
     get_or_create_user(bot, update)
-    top_users = get_top(5)
+
+    # TODO: add support for variable number
+    count = 5
+
+    results = []
+    cursor = get_connection().cursor()
+    cursor.execute("SELECT * FROM users;")
+    users = cursor.fetchall()
+    get_connection().commit()
+    for user in users:
+        results.append((user[1], user[2], user[3], get_streak_of(user[0])))
+    results.sort(key=lambda x: x[3], reverse=True)
+    top_users = results[:count]
+
     line = []
     for i, user in enumerate(top_users):
         first_name, last_name, username, streak = user
