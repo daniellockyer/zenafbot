@@ -385,7 +385,6 @@ def rest(bot, update):
     name_to_show = get_name(update.message.from_user)
     bot.send_message(chat_id=update.message.chat.id, text="✅ {} is resting today!".format(name_to_show,))
 
-# Add an entry to your journal
 def journaladd(bot, update):
     def validation_callback(parts):
         # String will always fit in db as db stores as much as max length for telegram message
@@ -405,7 +404,6 @@ def journaladd(bot, update):
         "value_error": "✏️  Please give a valid journal entry. ✏️" # Don't think this one will trigger
     })
 
-# Recall entries from your journal for a particular day
 def journallookup(bot, update):
     user_id = update.message.from_user.id
     username = get_name(update.message.from_user)
@@ -437,10 +435,7 @@ def top(bot, update):
     top_users = get_top(5)
     line = []
     for i, user in enumerate(top_users):
-        first_name = user[0]
-        last_name = user[1]
-        username = user[2]
-        streak = user[3]
+        first_name, last_name, username, streak = user
         emoji = get_streak_emoji(streak)
 
         if username:
@@ -511,10 +506,8 @@ def delete_and_send(bot, update, validation_callback, success_callback, strings,
     add_to_table(strings["table_name"], update.message.from_user.id, value, backdate)
     delete_message(bot, update.message.chat.id, update.message.message_id)
 
-    user = update.message.from_user
-    name_to_show = get_name(user)
     historic_date = "" if backdate is None else " on " + backdate.date().isoformat()
-    success_callback(name_to_show, value, update, historic_date)
+    success_callback(get_name(update.message.from_user), value, update, historic_date)
 
 def get_or_create_user(bot, update):
     user = update.message.from_user
