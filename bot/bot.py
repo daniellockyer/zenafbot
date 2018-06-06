@@ -116,6 +116,7 @@ def help_message(bot, update):
         "\n"\
         "`[period]` = either `weekly`, `biweekly`, `monthly` or `all`\n"\
         "/anxietystats \[period] = Graph of your anxiety levels\n"\
+        "/fastingstats \[period] = Graph of your fasts\n"\
         "/groupstats \[period] = Total meditation time by the group\n"\
         "/happystats \[period] = Graph of your happiness levels\n"\
         "/journalentries \[dd-mm-yyyy] = Retrieve journal entries from date\n"\
@@ -599,6 +600,8 @@ def stats(bot, update):
     # synonyms as 'happinessstats' is weird AF
     elif command == "/happinessstats" or command == "/happystats":
         generate_linechart_report_from("happiness", filename, user, start_date, now)
+    elif command == "/fastingstats":
+        generate_timelog_report_from("fasting", filename, user, start_date, now)
 
     delete_message(bot, update.message.chat.id, update.message.message_id)
 
@@ -771,6 +774,7 @@ DISPATCHER.add_handler(CommandHandler('done', done))
 DISPATCHER.add_handler(CommandHandler('exercise', exercise))
 DISPATCHER.add_handler(CommandHandler('fast', fasting))
 DISPATCHER.add_handler(CommandHandler('fasting', fasting))
+DISPATCHER.add_handler(CommandHandler('fastingstats', stats))
 DISPATCHER.add_handler(CommandHandler('groupstats', stats))
 DISPATCHER.add_handler(CommandHandler('happinessstats', stats))
 DISPATCHER.add_handler(CommandHandler('happiness', happiness))
