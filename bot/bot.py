@@ -271,6 +271,24 @@ def fasting(bot, update):
         "value_error": "🍽 You need to specify the value as a decimal number (eg. 18.5) 🍽"
     })
 
+def done(bot, update):
+    def validation_callback(parts):
+        activity = " ".join(parts)
+        activity_len = len(activity)
+        if activity_len == 0 or activity_len > 4000:
+            bot.send.message(chat_id=update.message.from_user.id, text="Please list your activity between 0 and 4000 characters!")
+            return False
+        return activity
+
+    def success_callback(name_to_show, value, update, historic_date):
+        bot.send_message(chat_id=update.message.chat.id, text="✅ {} completed{}: {}".format(name_to_show, historic_date, value))
+
+    delete_and_send(bot, update, validation_callback, success_callback, {
+        "table_name": "done",
+        "wrong_length": "There is a limit of 4000 characters!",
+        "value_error": "<shouldn't be hit>"
+    })
+
 def exercise(bot, update):
     def validation_callback(parts):
         activity = " ".join(parts)
@@ -678,6 +696,12 @@ cursor.execute("CREATE TABLE IF NOT EXISTS exercise(\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
+cursor.execute("CREATE TABLE IF NOT EXISTS done(\
+    id INTEGER NOT NULL REFERENCES users(id),\
+    value varchar(4096) NOT NULL,\
+    created_at TIMESTAMP NOT NULL DEFAULT now()\
+);")
+
 db.get_connection().commit()
 cursor.close()
 
@@ -689,6 +713,7 @@ DISPATCHER.add_handler(CommandHandler('anxiety', anxiety))
 DISPATCHER.add_handler(CommandHandler('anxietystats', stats))
 DISPATCHER.add_handler(CommandHandler('exercise', exercise))
 DISPATCHER.add_handler(CommandHandler('rest', rest))
+DISPATCHER.add_handler(CommandHandler('done', done))
 DISPATCHER.add_handler(CommandHandler('meditate', meditate))
 DISPATCHER.add_handler(CommandHandler('meditation', meditate))
 DISPATCHER.add_handler(CommandHandler('meditatestats', stats))
