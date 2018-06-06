@@ -637,7 +637,7 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
 
     if table == "meditation":
         units = "minutes"
-    elif table == "sleep":
+    elif table == "sleep" or table == "fasting":
         units = "hours"
 
     _, axis = plt.subplots()
