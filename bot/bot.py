@@ -593,7 +593,7 @@ def stats(bot, update):
     elif command == "/anxietystats":
         generate_linechart_report_from("anxiety", filename, user, start_date, now)
     elif command == "/sleepstats":
-        generate_timelog_report_from("sleep", filename, user, start_date, now)
+        generate_timelog_report_from("sleep", filename, user, start_date, now, calc_average=True)
     elif command == "/groupstats":
         generate_timelog_report_from("meditation", filename, user, start_date, now, all_data=True)
     # synonyms as 'happinessstats' is weird AF
@@ -615,7 +615,7 @@ def get_chart_x_limits(start_date, end_date, dates):
     upper_limit = end_date.date() if end_date else sorted_dates[-1]
     return [lower_limit, upper_limit]
 
-def generate_timelog_report_from(table, filename, user, start_date, end_date, all_data=False):
+def generate_timelog_report_from(table, filename, user, start_date, end_date, all_data=False, calc_average=False):
     user_id = None if all_data else user.id
     username = "Group" if all_data else get_name(user)
     results = get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
@@ -626,7 +626,11 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
 
     dates = dates_to_value_mapping.keys()
     values = dates_to_value_mapping.values()
-    total = sum(values)
+
+    if calc_average:
+        title_text = "Average: {:.1f}".format(float(sum(values)) / max(len(values), 1))
+    else:
+        title_text = "Total: {:.1f}".format(sum(values))
 
     if table == "meditation":
         units = "minutes"
@@ -650,7 +654,7 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
     else:
         axis.xaxis.set_major_locator(mdates.DayLocator())
     axis.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
-    plt.title('{}\'s {} chart\n{} days report. Total: {:.1f} {}'.format(username, table, interval, total, units))
+    plt.title('{}\'s {} chart\n{} days report. {} {}'.format(username, table, interval, title_text, units))
     plt.savefig(filename)
     plt.close()
 
