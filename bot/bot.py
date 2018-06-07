@@ -104,6 +104,7 @@ def help_message(bot, update):
     message = \
         "/top = Shows top 5 people with the highest meditation streak\n"\
         "/streak = Shows your current meditation streak\n"\
+        "/summary \[<email> or `off`] - Enable or disable weekly email summaries \n"\
         "\n"\
         "`[backdate?]` allows you to log something in the past (eg. `/meditate 10 22-MARCH-2018.`) This is completely optional.\n"\
         "/anxiety \[0-10] \[backdate?] = Anxiety level (0 low, 10 high)\n"\
