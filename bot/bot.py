@@ -437,9 +437,17 @@ def journallookup(bot, update):
 
 def top(bot, update):
     get_or_create_user(bot, update)
+    parts = update.message.text.split(" ")
 
-    # TODO: add support for variable number
     count = 5
+
+    if len(parts) > 1:
+        try:
+            count = int(parts[1])
+        except ValueError:
+            pass
+
+    count = min(count, 20)
 
     results = []
     cursor = get_connection().cursor()
