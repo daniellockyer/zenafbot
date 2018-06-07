@@ -1,9 +1,12 @@
 from collections import defaultdict
+from email.utils import parseaddr
 import datetime
+from email.mime.text import MIMEText
 import math
 import os
 import re
 from pytz import timezone, all_timezones
+import smtplib
 
 import dateparser
 import matplotlib
@@ -28,6 +31,9 @@ DB_NAME = os.environ.get('DB_NAME', 'zenirlbot')
 DB_USER = os.environ.get('DB_USER', 'postgres')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', 'password')
 DB_HOST = os.environ.get('DB_HOST', 'localhost')
+
+GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', None)
+GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', None)
 
 def get_connection():
     global CONNECTION
@@ -103,6 +109,7 @@ def help_message(bot, update):
     message = \
         "/top = Shows top 5 people with the highest meditation streak\n"\
         "/streak = Shows your current meditation streak\n"\
+        "/summary \[<email> or `off`] - Enable or disable weekly email summaries \n"\
         "\n"\
         "`[backdate?]` allows you to log something in the past (eg. `/meditate 10 22-MARCH-2018.`) This is completely optional.\n"\
         "/anxiety \[0-10] \[backdate?] = Anxiety level (0 low, 10 high)\n"\
@@ -389,6 +396,39 @@ def rest(bot, update):
     delete_message(bot, update.message.chat.id, update.message.message_id)
     name_to_show = get_name(update.message.from_user)
     bot.send_message(chat_id=update.message.chat.id, text="✅ {} is resting today!".format(name_to_show,))
+
+def summary(bot, update):
+    get_or_create_user(bot, update)
+    parts = update.message.text.split(" ")
+    delete_message(bot, update.message.chat.id, update.message.message_id)
+
+    if len(parts) != 2:
+        bot.send_message(chat_id=update.message.from_user.id, text="📧 Please give your email address or `off`!")
+        return
+
+    if parts[1] == "now":
+        send_summary_email(bot, update)
+        return
+
+    if parts[1] == "off":
+        cursor = get_connection().cursor()
+        cursor.execute('DELETE FROM summary WHERE id = %s', (update.message.from_user.id,))
+        get_connection().commit()
+        cursor.close()
+        bot.send_message(chat_id=update.message.from_user.id, text="📧 Okay, you'll no longer receive weekly summaries!")
+        return
+
+    checked_addr = parseaddr(parts[1])[1]
+
+    if "@" not in checked_addr:
+        bot.send_message(chat_id=update.message.from_user.id, text="📧 It doesn't seem like your email address ({}) is valid!".format(checked_addr,))
+        return
+
+    cursor = get_connection().cursor()
+    cursor.execute("INSERT INTO summary (id, email) VALUES (%s, %s) ON CONFLICT (id) DO UPDATE SET email = %s", (update.message.from_user.id, checked_addr, checked_addr))
+    get_connection().commit()
+    cursor.close()
+    bot.send_message(chat_id=update.message.from_user.id, text="📧 Great! You'll start receiving summaries to {}".format(checked_addr,))
 
 def journaladd(bot, update):
     def validation_callback(parts):
@@ -699,6 +739,68 @@ def generate_linechart_report_from(table, filename, user, start_date, end_date):
     plt.savefig(filename)
     plt.close()
 
+def send_summary_email(bot, update):
+    user = get_or_create_user(bot, update)
+    cursor = get_connection().cursor()
+    cursor.execute('SELECT * FROM summary WHERE id = %s', (user[0],))
+    result = cursor.fetchone()
+    cursor.close()
+
+    if result is None:
+        bot.send_message(chat_id=update.message.chat_id, text="📧 Please set your email!")
+        return
+
+    TO = result[1]
+
+    def mean(numbers):
+        return float(sum(numbers)) / max(len(numbers), 1)
+
+    now = datetime.datetime.now()
+    seven_days_ago = get_x_days_before(now, 7).replace(hour=0, minute=0, second=0)
+    meditation_streak = str(get_streak_of(user[0]))
+    exercise_events = get_values("exercise", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    exercise_events_len = str(len(exercise_events))
+    meditation_events = get_values("meditation", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    meditation_sum = str(sum([v[1] for v in meditation_events]))
+    sleep_events = get_values("sleep", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    sleep_mean = str(mean([v[1] for v in sleep_events]))
+    happiness_events = get_values("happiness", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    happiness_mean = str(mean([v[1] for v in happiness_events]))
+    anxiety_events = get_values("anxiety", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    anxiety_mean = str(mean([v[1] for v in anxiety_events]))
+
+    TEXT = "Hi "+user[1]+"!\n\
+\n\
+Here are your logged stats for the last seven days:\n\
+\n\
+🙏 Meditated "+meditation_sum+" total minutes\n\
+🔥 Meditation streak is at "+meditation_streak+" days in a row\n\
+😴 Slept on average "+sleep_mean+" hours per night\n\
+🙂 Average happiness level was "+happiness_mean+"\n\
+😅 Average anxiety level was "+anxiety_mean+"\n\
+💪 Exercised "+exercise_events_len+" times\n\
+\n\
+❤️  Mindful Makers\n\
+https://mindfulmakers.club/"
+
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.ehlo()
+    server.starttls()
+    server.login(GMAIL_EMAIL, GMAIL_PASSWORD)
+
+    try:
+        m = MIMEText(TEXT.encode("UTF-8"), 'plain', "UTF-8")
+        m["From"] = "Mindful Makers <"+GMAIL_EMAIL+">"
+        m["To"] = TO
+        m["Subject"] = "⛩ Weekly Summary"
+        server.sendmail(GMAIL_EMAIL, [TO], m.as_string())
+        bot.send_message(chat_id=update.message.chat_id, text="✅ Summary email sent!")
+    except Exception as e:
+        bot.send_message(chat_id=update.message.chat_id, text="📧 Couldn't send email summary!")
+        print(e)
+
+    server.quit()
+
 # Returns number of seconds until xx:00:00.
 # If currently 11:43:23, then should return 37 + 60 * 16
 def time_until_next_hour():
@@ -772,6 +874,13 @@ cursor.execute("CREATE TABLE IF NOT EXISTS done(\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
+cursor.execute("CREATE TABLE IF NOT EXISTS summary(\
+    id INTEGER UNIQUE NOT NULL REFERENCES users(id),\
+    email varchar(128) NOT NULL,\
+    last_emailed TIMESTAMP NOT NULL DEFAULT 'epoch',\
+    created_at TIMESTAMP NOT NULL DEFAULT now()\
+);")
+
 get_connection().commit()
 cursor.close()
 
@@ -797,6 +906,7 @@ DISPATCHER.add_handler(CommandHandler('rest', rest))
 DISPATCHER.add_handler(CommandHandler('sleep', sleep))
 DISPATCHER.add_handler(CommandHandler('sleepstats', stats))
 DISPATCHER.add_handler(CommandHandler('streak', streak))
+DISPATCHER.add_handler(CommandHandler('summary', summary))
 DISPATCHER.add_handler(CommandHandler('top', top))
 DISPATCHER.add_handler(MessageHandler(Filters.private, pm))
 
