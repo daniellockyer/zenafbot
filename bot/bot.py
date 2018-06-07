@@ -1,4 +1,5 @@
 from collections import defaultdict
+from email.utils import parseaddr
 import datetime
 import math
 import os
@@ -390,6 +391,35 @@ def rest(bot, update):
     name_to_show = get_name(update.message.from_user)
     bot.send_message(chat_id=update.message.chat.id, text="✅ {} is resting today!".format(name_to_show,))
 
+def summary(bot, update):
+    get_or_create_user(bot, update)
+    parts = update.message.text.split(" ")
+    delete_message(bot, update.message.chat.id, update.message.message_id)
+
+    if len(parts) != 2:
+        bot.send_message(chat_id=update.message.from_user.id, text="📧 Please give your email address or `off`!")
+        return
+
+    if parts[1] == "off":
+        cursor = get_connection().cursor()
+        cursor.execute('DELETE FROM summary WHERE id = %s', (update.message.from_user.id,))
+        get_connection().commit()
+        cursor.close()
+        bot.send_message(chat_id=update.message.from_user.id, text="📧 Okay, you'll no longer receive weekly summaries!")
+        return
+
+    checked_addr = parseaddr(parts[1])[1]
+
+    if "@" not in checked_addr:
+        bot.send_message(chat_id=update.message.from_user.id, text="📧 It doesn't seem like your email address ({}) is valid!".format(checked_addr,))
+        return
+
+    cursor = get_connection().cursor()
+    cursor.execute("REPLACE INTO summary (id, email) VALUES (%s, %s)", (update.message.from_user.id, checked_addr))
+    get_connection().commit()
+    cursor.close()
+    bot.send_message(chat_id=update.message.from_user.id, text="📧 Great! You'll start receiving summaries to {}".format(checked_addr,))
+
 def journaladd(bot, update):
     def validation_callback(parts):
         # String will always fit in db as db stores as much as max length for telegram message
@@ -772,6 +802,13 @@ cursor.execute("CREATE TABLE IF NOT EXISTS done(\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
+cursor.execute("CREATE TABLE IF NOT EXISTS summary(\
+    id INTEGER UNIQUE NOT NULL REFERENCES users(id),\
+    email varchar(128) NOT NULL,\
+    last_emailed TIMESTAMP NOT NULL DEFAULT epoch,\
+    created_at TIMESTAMP NOT NULL DEFAULT now()\
+);")
+
 get_connection().commit()
 cursor.close()
 
@@ -797,6 +834,7 @@ DISPATCHER.add_handler(CommandHandler('rest', rest))
 DISPATCHER.add_handler(CommandHandler('sleep', sleep))
 DISPATCHER.add_handler(CommandHandler('sleepstats', stats))
 DISPATCHER.add_handler(CommandHandler('streak', streak))
+DISPATCHER.add_handler(CommandHandler('summary', summary))
 DISPATCHER.add_handler(CommandHandler('top', top))
 DISPATCHER.add_handler(MessageHandler(Filters.private, pm))
 
