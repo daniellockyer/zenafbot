@@ -443,7 +443,7 @@ def top(bot, update):
 
     if len(parts) > 1:
         try:
-            count = int(parts[1])
+            count = max(int(parts[1]), 1)
         except ValueError:
             pass
 
