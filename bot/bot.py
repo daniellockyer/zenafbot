@@ -792,7 +792,7 @@ def send_summary_email(bot, update):
         body += "😅 Average anxiety level was "+anxiety_mean+"\n"
 
     TEXT = "Hi "+user[1]+"!\n\nHere are your logged stats for the last seven days:\n\n"+body+"\n\
-Remember, you can log a multitude of things using the bot - check out /help for more details!\n\
+Remember, you can log a multitude of things using the bot - check out /help for more details!\n\n\
 ❤️  Mindful Makers\n\
 https://mindfulmakers.club/"
 
