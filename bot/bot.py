@@ -407,7 +407,7 @@ def summary(bot, update):
         return
 
     if parts[1] == "now":
-        send_summary_email(bot, update)
+        send_summary_email(update.message.from_user.id)
         return
 
     if parts[1] == "off":
@@ -740,15 +740,20 @@ def generate_linechart_report_from(table, filename, user, start_date, end_date):
     plt.savefig(filename)
     plt.close()
 
-def send_summary_email(bot, update):
-    user = get_or_create_user(bot, update)
+def send_summary_email(user_id):
     cursor = get_connection().cursor()
-    cursor.execute('SELECT * FROM summary WHERE id = %s', (user[0],))
+
+    cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+    user = cursor.fetchone()
+
+    cursor.execute('SELECT * FROM summary WHERE id = %s', (user_id,))
     result = cursor.fetchone()
     cursor.close()
 
+    if user is None:
+        return
+
     if result is None:
-        bot.send_message(chat_id=update.message.chat_id, text="📧 Please set your email!")
         return
 
     TO = result[1]
@@ -764,29 +769,29 @@ def send_summary_email(bot, update):
     seven_days_ago = get_x_days_before(now, 7).replace(hour=0, minute=0, second=0)
     body = ""
 
-    meditation_events = get_values("meditation", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    meditation_events = get_values("meditation", start_date=seven_days_ago, end_date=now, user_id=user_id)
     if len(meditation_events) != 0:
         meditation_sum = f(sum([v[1] for v in meditation_events]))
         body += "🙏 Meditated "+meditation_sum+" total minutes\n"
 
-    meditation_streak = str(get_streak_of(user[0]))
+    meditation_streak = str(get_streak_of(user_id))
     body += "🔥 Meditation streak is at "+meditation_streak+" days in a row\n"
 
-    exercise_events = get_values("exercise", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    exercise_events = get_values("exercise", start_date=seven_days_ago, end_date=now, user_id=user_id)
     exercise_events_len = str(len(exercise_events))
     body += "💪 Exercised "+exercise_events_len+" times\n"
 
-    sleep_events = get_values("sleep", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    sleep_events = get_values("sleep", start_date=seven_days_ago, end_date=now, user_id=user_id)
     if len(sleep_events) != 0 :
         sleep_mean = f(mean(sleep_events))
         body += "😴 Slept on average "+sleep_mean+" hours per night\n"
 
-    happiness_events = get_values("happiness", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    happiness_events = get_values("happiness", start_date=seven_days_ago, end_date=now, user_id=user_id)
     if len(happiness_events) != 0:
         happiness_mean = f(mean(happiness_events))
         body += "🙂 Average happiness level was "+happiness_mean+"\n"
 
-    anxiety_events = get_values("anxiety", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    anxiety_events = get_values("anxiety", start_date=seven_days_ago, end_date=now, user_id=user_id)
     if len(anxiety_events) != 0:
         anxiety_mean = f(mean(anxiety_events))
         body += "😅 Average anxiety level was "+anxiety_mean+"\n"
@@ -807,9 +812,7 @@ https://mindfulmakers.club/"
         m["To"] = TO
         m["Subject"] = "⛩ Weekly Summary"
         server.sendmail(GMAIL_EMAIL, [TO], m.as_string())
-        bot.send_message(chat_id=update.message.chat_id, text="✅ Summary email sent!")
     except Exception as e:
-        bot.send_message(chat_id=update.message.chat_id, text="📧 Couldn't send email summary!")
         print(e)
 
     server.quit()
