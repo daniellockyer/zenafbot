@@ -762,29 +762,37 @@ def send_summary_email(bot, update):
 
     now = datetime.datetime.now()
     seven_days_ago = get_x_days_before(now, 7).replace(hour=0, minute=0, second=0)
+    body = ""
+
+    meditation_events = get_values("meditation", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    if len(meditation_events) != 0:
+        meditation_sum = f(sum([v[1] for v in meditation_events]))
+        body += "🙏 Meditated "+meditation_sum+" total minutes\n"
+
     meditation_streak = str(get_streak_of(user[0]))
+    body += "🔥 Meditation streak is at "+meditation_streak+" days in a row\n"
+
     exercise_events = get_values("exercise", start_date=seven_days_ago, end_date=now, user_id=user[0])
     exercise_events_len = str(len(exercise_events))
-    meditation_events = get_values("meditation", start_date=seven_days_ago, end_date=now, user_id=user[0])
-    meditation_sum = f(sum([v[1] for v in meditation_events]))
-    sleep_events = get_values("sleep", start_date=seven_days_ago, end_date=now, user_id=user[0])
-    sleep_mean = f(mean(sleep_events))
-    happiness_events = get_values("happiness", start_date=seven_days_ago, end_date=now, user_id=user[0])
-    happiness_mean = f(mean(happiness_events))
-    anxiety_events = get_values("anxiety", start_date=seven_days_ago, end_date=now, user_id=user[0])
-    anxiety_mean = f(mean(anxiety_events))
+    body += "💪 Exercised "+exercise_events_len+" times\n"
 
-    TEXT = "Hi "+user[1]+"!\n\
-\n\
-Here are your logged stats for the last seven days:\n\
-\n\
-🙏 Meditated "+meditation_sum+" total minutes\n\
-🔥 Meditation streak is at "+meditation_streak+" days in a row\n\
-😴 Slept on average "+sleep_mean+" hours per night\n\
-🙂 Average happiness level was "+happiness_mean+"\n\
-😅 Average anxiety level was "+anxiety_mean+"\n\
-💪 Exercised "+exercise_events_len+" times\n\
-\n\
+    sleep_events = get_values("sleep", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    if len(sleep_events) != 0 :
+        sleep_mean = f(mean(sleep_events))
+        body += "😴 Slept on average "+sleep_mean+" hours per night\n"
+
+    happiness_events = get_values("happiness", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    if len(happiness_events) != 0:
+        happiness_mean = f(mean(happiness_events))
+        body += "🙂 Average happiness level was "+happiness_mean+"\n"
+
+    anxiety_events = get_values("anxiety", start_date=seven_days_ago, end_date=now, user_id=user[0])
+    if len(anxiety_events) != 0:
+        anxiety_mean = f(mean(anxiety_events))
+        body += "😅 Average anxiety level was "+anxiety_mean+"\n"
+
+    TEXT = "Hi "+user[1]+"!\n\nHere are your logged stats for the last seven days:\n\n"+body+"\n\
+Remember, you can log a multitude of things using the bot - check out /help for more details!\n\
 ❤️  Mindful Makers\n\
 https://mindfulmakers.club/"
 
