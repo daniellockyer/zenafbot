@@ -107,7 +107,6 @@ def delete_message(bot, chat_id, message_id):
 
 def help_message(bot, update):
     message = \
-        "/top = Shows top 5 people with the highest meditation streak\n"\
         "/streak = Shows your current meditation streak\n"\
         "/summary \[<email> or `off`] - Enable or disable weekly email summaries \n"\
         "\n"\
@@ -740,6 +739,21 @@ def generate_linechart_report_from(table, filename, user, start_date, end_date):
     plt.savefig(filename)
     plt.close()
 
+def send_summaries(bot, job):
+    now = datetime.datetime.now()
+    seven_days_ago = get_x_days_before(now, 7)
+
+    cursor = get_connection().cursor()
+    cursor.execute('SELECT * FROM summary WHERE last_emailed < %s', (seven_days_ago,))
+    results = cursor.fetchall()
+
+    for result in results:
+        send_summary_email(result[0])
+        cursor.execute('UPDATE summary SET last_emailed = %s WHERE id = %s', (now, update.message.from_user.id))
+
+    get_connection().commit()
+    cursor.close()
+
 def send_summary_email(user_id):
     cursor = get_connection().cursor()
 
@@ -923,10 +937,10 @@ DISPATCHER.add_handler(CommandHandler('sleep', sleep))
 DISPATCHER.add_handler(CommandHandler('sleepstats', stats))
 DISPATCHER.add_handler(CommandHandler('streak', streak))
 DISPATCHER.add_handler(CommandHandler('summary', summary))
-DISPATCHER.add_handler(CommandHandler('top', top))
 DISPATCHER.add_handler(MessageHandler(Filters.private, pm))
 
 JOBQUEUE.run_repeating(executereminders, interval=3600, first=time_until_next_hour()+10)
+#JOBQUEUE.run_daily(send_summaries, time=datetime.time(18, 0, 0), days=(6,))
 
 UPDATER.start_polling()
 UPDATER.idle()
