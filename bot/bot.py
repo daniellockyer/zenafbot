@@ -407,6 +407,7 @@ def summary(bot, update):
 
     if parts[1] == "now":
         send_summary_email(update.message.from_user.id)
+        bot.send_message(chat_id=update.message.from_user.id, text="📧 We've sent you a summary email!")
         return
 
     if parts[1] == "off":
