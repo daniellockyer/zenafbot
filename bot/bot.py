@@ -665,17 +665,18 @@ def get_chart_x_limits(start_date, end_date, dates):
     upper_limit = end_date.date() if end_date else sorted_dates[-1]
     return [lower_limit, upper_limit]
 
-def generate_timelog_report_from(table, filename, user, start_date, end_date, all_data=False, calc_average=False):
-    user_id = None if all_data else user.id
-    username = "Group" if all_data else get_name(user)
-    results = get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
-
+def gen_data_collection(results):
     dates_to_value_mapping = defaultdict(int)
     for result in results:
         dates_to_value_mapping[result[2].date()] += result[1]
 
-    dates = dates_to_value_mapping.keys()
-    values = dates_to_value_mapping.values()
+    return dates_to_value_mapping.keys(), dates_to_value_mapping.values()
+
+def generate_timelog_report_from(table, filename, user, start_date, end_date, all_data=False, calc_average=False):
+    user_id = None if all_data else user.id
+    username = "Group" if all_data else get_name(user)
+    results = get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
+    dates, values = gen_data_collection(results)
 
     if calc_average:
         title_text = "Average: {:.1f}".format(float(sum(values)) / max(len(values), 1))
@@ -752,8 +753,12 @@ def send_summary_email(bot, update):
 
     TO = result[1]
 
-    def mean(numbers):
-        return float(sum(numbers)) / max(len(numbers), 1)
+    def f(output):
+        return "{:.2f}".format(output)
+
+    def mean(results):
+        dates, values = gen_data_collection(results)
+        return float(sum(values)) / max(len(values), 1)
 
     now = datetime.datetime.now()
     seven_days_ago = get_x_days_before(now, 7).replace(hour=0, minute=0, second=0)
@@ -761,13 +766,13 @@ def send_summary_email(bot, update):
     exercise_events = get_values("exercise", start_date=seven_days_ago, end_date=now, user_id=user[0])
     exercise_events_len = str(len(exercise_events))
     meditation_events = get_values("meditation", start_date=seven_days_ago, end_date=now, user_id=user[0])
-    meditation_sum = str(sum([v[1] for v in meditation_events]))
+    meditation_sum = f(sum([v[1] for v in meditation_events]))
     sleep_events = get_values("sleep", start_date=seven_days_ago, end_date=now, user_id=user[0])
-    sleep_mean = str(mean([v[1] for v in sleep_events]))
+    sleep_mean = f(mean(sleep_events))
     happiness_events = get_values("happiness", start_date=seven_days_ago, end_date=now, user_id=user[0])
-    happiness_mean = str(mean([v[1] for v in happiness_events]))
+    happiness_mean = f(mean(happiness_events))
     anxiety_events = get_values("anxiety", start_date=seven_days_ago, end_date=now, user_id=user[0])
-    anxiety_mean = str(mean([v[1] for v in anxiety_events]))
+    anxiety_mean = f(mean(anxiety_events))
 
     TEXT = "Hi "+user[1]+"!\n\
 \n\
