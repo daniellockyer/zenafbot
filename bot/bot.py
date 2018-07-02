@@ -941,7 +941,7 @@ DISPATCHER.add_handler(CommandHandler('summary', summary))
 DISPATCHER.add_handler(MessageHandler(Filters.private, pm))
 
 JOBQUEUE.run_repeating(executereminders, interval=3600, first=time_until_next_hour()+10)
-#JOBQUEUE.run_daily(send_summaries, time=datetime.time(18, 0, 0), days=(6,))
+JOBQUEUE.run_daily(send_summaries, time=datetime.time(18, 0, 0), days=(6,))
 
 UPDATER.start_polling()
 UPDATER.idle()
