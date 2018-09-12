@@ -7,5 +7,5 @@ python:
   - "3.6"
 install:
   - pip install pylint
-  - pip install -r bot/requirements.txt
-script: "pylint --errors-only bot/"
+  - pip install -r requirements.txt
+script: "pylint --errors-only ."

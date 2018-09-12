@@ -7,6 +7,7 @@ import os
 import re
 from pytz import timezone, all_timezones
 import smtplib
+from configparser import ConfigParser
 
 import dateparser
 import matplotlib
@@ -18,22 +19,23 @@ from psycopg2 import sql
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram.error import BadRequest
 
-TOKEN = os.environ.get('BOT_TOKEN', None)
-if TOKEN is None:
-    raise Exception('No Token!')
+PARSER = ConfigParser()
+PARSER.read('creds.ini')
+
+TOKEN = PARSER['BOT_TOKEN']
 
 UPDATER = Updater(token=TOKEN)
 DISPATCHER = UPDATER.dispatcher
 JOBQUEUE = UPDATER.job_queue
 
 CONNECTION = None
-DB_NAME = os.environ.get('DB_NAME', 'zenirlbot')
-DB_USER = os.environ.get('DB_USER', 'postgres')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', 'password')
-DB_HOST = os.environ.get('DB_HOST', 'localhost')
+DB_NAME = PARSER['DB_NAME']
+DB_USER = PARSER['DB_USER']
+DB_PASSWORD = PARSER['DB_PASSWORD']
+DB_HOST = PARSER['DB_HOST']
 
-GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', None)
-GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', None)
+GMAIL_EMAIL = PARSER['GMAIL_EMAIL']
+GMAIL_PASSWORD = PARSER['GMAIL_PASSWORD']
 
 def get_connection():
     global CONNECTION
