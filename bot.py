@@ -74,12 +74,9 @@ def get_streak_of(user_id):
     get_connection().commit()
     return results[0][0]
 
-def add_to_table(table, user_id, value, backdate=None):
+def add_to_table(table, user_id, value, sentdate):
     cursor = get_connection().cursor()
-    if backdate:
-        cursor.execute(sql.SQL("INSERT INTO {} (id, value, created_at) VALUES (%s, %s, %s)").format(sql.Identifier(table)), (user_id, value, backdate))
-    else:
-        cursor.execute(sql.SQL("INSERT INTO {} (id, value) VALUES (%s, %s)").format(sql.Identifier(table)), (user_id, value))
+    cursor.execute(sql.SQL("INSERT INTO {} (id, value, created_at) VALUES (%s, %s, %s)").format(sql.Identifier(table)), (user_id, value, sentdate))
     get_connection().commit()
     cursor.close()
 
@@ -393,7 +390,7 @@ def exercise(bot, update):
 
 def rest(bot, update):
     get_or_create_user(bot, update)
-    add_to_table("exercise", update.message.from_user.id, "rest")
+    add_to_table("exercise", update.message.from_user.id, "rest", update.message.date)
     delete_message(bot, update.message.chat.id, update.message.message_id)
     name_to_show = get_name(update.message.from_user)
     bot.send_message(chat_id=update.message.chat.id, text="✅ {} is resting today!".format(name_to_show,))
@@ -570,6 +567,9 @@ def delete_and_send(bot, update, validation_callback, success_callback, strings,
     except ValueError:
         bot.send_message(chat_id=update.message.from_user.id, text=strings["value_error"])
         return
+
+    if backdate is None:
+        backdate = update.message.date
 
     add_to_table(strings["table_name"], update.message.from_user.id, value, backdate)
     delete_message(bot, update.message.chat.id, update.message.message_id)
@@ -752,7 +752,7 @@ def send_summaries(bot, job):
 
     for result in results:
         send_summary_email(result[0])
-        cursor.execute('UPDATE summary SET last_emailed = %s WHERE id = %s', (now, update.message.from_user.id))
+        cursor.execute('UPDATE summary SET last_emailed = %s WHERE id = %s', (now, result[0]))
 
     get_connection().commit()
     cursor.close()
