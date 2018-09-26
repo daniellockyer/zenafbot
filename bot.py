@@ -703,7 +703,6 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
         axis.xaxis_date()
         plt.bar(dates, values, align='center', alpha=0.5)
 
-    plt.ylabel(table.title())
     interval = (x_limits[1] - x_limits[0]).days
     if interval > 10:
         axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/10)))
