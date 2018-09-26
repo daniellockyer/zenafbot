@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import psycopg2
 from psycopg2 import sql
+import seaborn as sns
+sns.set(style="darkgrid")
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram.error import BadRequest
 
@@ -698,7 +700,7 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
 
     if line:
         axis.set_ylim([0, 10])
-        plt.plot(dates, values)
+        sns.lineplot(dates, values)
     else:
         axis.xaxis_date()
         plt.bar(dates, values, align='center', alpha=0.5)
