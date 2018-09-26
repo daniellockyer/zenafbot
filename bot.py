@@ -17,7 +17,7 @@ import matplotlib.dates as mdates
 import psycopg2
 from psycopg2 import sql
 import seaborn as sns
-sns.set(style="darkgrid")
+sns.set(style="white")
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram.error import BadRequest
 
