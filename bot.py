@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from collections import defaultdict
 from email.utils import parseaddr
 import datetime
