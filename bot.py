@@ -712,7 +712,7 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
         axis.xaxis.set_major_locator(mdates.DayLocator())
     axis.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
 
-    plt.title('{}\'s {}\n{} days - {}'.format(username, table, interval, title_text))
+    plt.title('{}\'s {}\n{} days {}'.format(username, table, interval, title_text))
     plt.savefig(filename)
     plt.close()
 
