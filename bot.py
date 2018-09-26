@@ -697,13 +697,15 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
     _, axis = plt.subplots()
     x_limits = get_chart_x_limits(start_date, end_date, dates)
     axis.set_xlim(x_limits)
+    axis.xaxis_date()
 
     if line:
         axis.set_ylim([0, 10])
         sns.lineplot(dates, values)
     else:
-        axis.xaxis_date()
-        plt.bar(dates, values, align='center', alpha=0.5)
+        sns.barplot(dates, values)
+
+    sns.despine()
 
     interval = (x_limits[1] - x_limits[0]).days
     if interval > 10:
