@@ -607,10 +607,7 @@ def get_or_create_user(bot, update):
     return result
 
 def get_name(user):
-    if user.username:
-        name_to_show = "@" + user.username
-    else:
-        name_to_show = user.full_name
+    name_to_show = "@" + user.username if user.username else user.full_name
     return name_to_show
 
 def get_x_days_before(start_date, days_before):
