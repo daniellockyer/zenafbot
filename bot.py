@@ -678,9 +678,9 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
     dates, values = gen_data_collection(results)
 
     if calc_average:
-        title_text = "Average: {:.1f}".format(float(sum(values)) / max(len(values), 1))
+        title_text = "average: {:.1f}".format(float(sum(values)) / max(len(values), 1))
     else:
-        title_text = "Total: {:.1f}".format(sum(values))
+        title_text = "total: {:.1f}".format(sum(values))
 
     if table == "meditation":
         units = "minutes"
@@ -704,7 +704,7 @@ def generate_timelog_report_from(table, filename, user, start_date, end_date, al
     else:
         axis.xaxis.set_major_locator(mdates.DayLocator())
     axis.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
-    plt.title('{}\'s {} chart\n{} days report. {} {}'.format(username, table, interval, title_text, units))
+    plt.title('{}\'s {}\n{} days - {} {}'.format(username, table, interval, title_text, units))
     plt.savefig(filename)
     plt.close()
 
@@ -732,7 +732,7 @@ def generate_linechart_report_from(table, filename, user, start_date, end_date):
     else:
         axis.xaxis.set_major_locator(mdates.DayLocator())
     axis.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
-    plt.title('{}\'s {} chart\n{} days report. Average: {:.2f}'.format(username, table, interval, average))
+    plt.title('{}\'s {}\n{} days - average: {:.2f}'.format(username, table, interval, average))
     plt.ylabel(table.title())
 
     plt.plot(dates, ratings)
