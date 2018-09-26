@@ -636,18 +636,17 @@ def stats(bot, update):
 
     filename = "./{}-chart.png".format(user.id)
     if command == "/meditatestats":
-        generate_timelog_report_from("meditation", filename, user, start_date, now)
+        generate_graph("meditation", filename, user, start_date, now)
     elif command == "/anxietystats":
-        generate_linechart_report_from("anxiety", filename, user, start_date, now)
+        generate_graph("anxiety", filename, user, start_date, now, line=True)
     elif command == "/sleepstats":
-        generate_timelog_report_from("sleep", filename, user, start_date, now, calc_average=True)
+        generate_graph("sleep", filename, user, start_date, now, calc_average=True)
     elif command == "/groupstats":
-        generate_timelog_report_from("meditation", filename, user, start_date, now, all_data=True)
-    # synonyms as 'happinessstats' is weird AF
+        generate_graph("meditation", filename, user, start_date, now, all_data=True)
     elif command == "/happinessstats" or command == "/happystats":
-        generate_linechart_report_from("happiness", filename, user, start_date, now)
+        generate_graph("happiness", filename, user, start_date, now, line=True)
     elif command == "/fastingstats":
-        generate_timelog_report_from("fasting", filename, user, start_date, now)
+        generate_graph("fasting", filename, user, start_date, now)
 
     delete_message(bot, update.message.chat.id, update.message.message_id)
 
@@ -671,71 +670,49 @@ def gen_data_collection(results):
 
     return dates_to_value_mapping.keys(), dates_to_value_mapping.values()
 
-def generate_timelog_report_from(table, filename, user, start_date, end_date, all_data=False, calc_average=False):
+def generate_graph(table, filename, user, start_date, end_date, all_data=False, calc_average=False, line=False):
     user_id = None if all_data else user.id
     username = "Group" if all_data else get_name(user)
     results = get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
-    dates, values = gen_data_collection(results)
 
-    if calc_average:
+    if line:
+        results = sorted(results, key=lambda x: x[2])
+        values = [x[1] for x in results]
+        dates = [x[2].date() for x in results]
+    else:
+        dates, values = gen_data_collection(results)
+
+    if calc_average or line:
         title_text = "average: {:.1f}".format(float(sum(values)) / max(len(values), 1))
     else:
         title_text = "total: {:.1f}".format(sum(values))
 
     if table == "meditation":
-        units = "minutes"
+        title_text += " minutes"
     elif table == "sleep" or table == "fasting":
-        units = "hours"
+        title_text += " hours"
 
     _, axis = plt.subplots()
-
     x_limits = get_chart_x_limits(start_date, end_date, dates)
     axis.set_xlim(x_limits)
-    axis.xaxis_date()
 
-    plt.bar(dates, values, align='center', alpha=0.5)
+    if line:
+        axis.set_ylim([0, 10])
+        plt.plot(dates, values)
+    else:
+        axis.xaxis_date()
+        plt.bar(dates, values, align='center', alpha=0.5)
+
     plt.ylabel(table.title())
-
     interval = (x_limits[1] - x_limits[0]).days
-    # Try to keep the ticks on the x axis readable by limiting to max of 10
     if interval > 10:
         axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/10)))
         axis.xaxis.set_minor_locator(mdates.DayLocator())
     else:
         axis.xaxis.set_major_locator(mdates.DayLocator())
     axis.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
-    plt.title('{}\'s {}\n{} days - {} {}'.format(username, table, interval, title_text, units))
-    plt.savefig(filename)
-    plt.close()
 
-def generate_linechart_report_from(table, filename, user, start_date, end_date):
-    user_id = user.id
-    username = get_name(user)
-    results = get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
-    results = sorted(results, key=lambda x: x[2])
-
-    ratings = [x[1] for x in results]
-    dates = [x[2] for x in results]
-    average = float(sum(ratings)) / max(len(ratings), 1)
-
-    _, axis = plt.subplots()
-
-    x_limits = get_chart_x_limits(start_date, end_date, [x.date() for x in dates])
-    axis.set_xlim(x_limits)
-    axis.set_ylim([0, 10])
-
-    interval = (x_limits[1] - x_limits[0]).days
-    # Try to keep the ticks on the x axis readable by limiting to max of 10
-    if interval > 10:
-        axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/10)))
-        axis.xaxis.set_minor_locator(mdates.DayLocator())
-    else:
-        axis.xaxis.set_major_locator(mdates.DayLocator())
-    axis.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
-    plt.title('{}\'s {}\n{} days - average: {:.2f}'.format(username, table, interval, average))
-    plt.ylabel(table.title())
-
-    plt.plot(dates, ratings)
+    plt.title('{}\'s {}\n{} days - {}'.format(username, table, interval, title_text))
     plt.savefig(filename)
     plt.close()
 
