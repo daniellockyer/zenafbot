@@ -659,14 +659,6 @@ def stats(bot, update):
     # Telegram API is synchronous, so it's OK to clean up now!
     os.remove(filename)
 
-def get_chart_x_limits(start_date, end_date, dates):
-    # Limits are difficult as start_date or end_date are allowed to be None
-    # So set limit based on those if set, otherwise based on returned earliest/latest in data
-    sorted_dates = sorted(dates)
-    lower_limit = start_date.date() if start_date else sorted_dates[0]
-    upper_limit = end_date.date() if end_date else sorted_dates[-1]
-    return [lower_limit, upper_limit]
-
 def gen_data_collection(results):
     dates_to_value_mapping = defaultdict(int)
     for result in results:
@@ -681,10 +673,32 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
 
     if line:
         results = sorted(results, key=lambda x: x[2])
-        values = [x[1] for x in results]
-        dates = [x[2].date() for x in results]
+        dates, values = [[x[2].date(), x[1]] for x in results]
     else:
         dates, values = gen_data_collection(results)
+
+    _, axis = plt.subplots()
+    sorted_dates = sorted(dates)
+    lower_limit = start_date.date() if start_date else sorted_dates[0]
+    upper_limit = end_date.date() if end_date else sorted_dates[-1]
+    axis.set_xlim([lower_limit, upper_limit])
+    axis.xaxis_date()
+
+    interval = (upper_limit - lower_limit).days
+    if interval > 10:
+        axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/10)))
+        axis.xaxis.set_minor_locator(mdates.DayLocator())
+    else:
+        axis.xaxis.set_major_locator(mdates.DayLocator())
+    axis.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
+
+    if line:
+        axis.set_ylim([0, 10])
+        sns.lineplot(dates, values)
+    else:
+        plt.bar(dates, values, align='center', alpha=0.5)
+
+    sns.despine()
 
     if calc_average or line:
         title_text = "average: {:.1f}".format(float(sum(values)) / max(len(values), 1))
@@ -695,27 +709,6 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
         title_text += " minutes"
     elif table == "sleep" or table == "fasting":
         title_text += " hours"
-
-    _, axis = plt.subplots()
-    x_limits = get_chart_x_limits(start_date, end_date, dates)
-    axis.set_xlim(x_limits)
-    axis.xaxis_date()
-
-    if line:
-        axis.set_ylim([0, 10])
-        sns.lineplot(dates, values)
-    else:
-        plt.bar(dates, values, align='center', alpha=0.5)
-
-    sns.despine()
-
-    interval = (x_limits[1] - x_limits[0]).days
-    if interval > 10:
-        axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/10)))
-        axis.xaxis.set_minor_locator(mdates.DayLocator())
-    else:
-        axis.xaxis.set_major_locator(mdates.DayLocator())
-    axis.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
 
     plt.title('{}\'s {}\n{} days {}'.format(username, table, interval, title_text))
     plt.savefig(filename)
