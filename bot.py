@@ -651,6 +651,8 @@ def stats(bot, update):
         generate_graph("happiness", filename, user, start_date, now, line=True)
     elif command == "/fastingstats":
         generate_graph("fasting", filename, user, start_date, now)
+    elif command == "/totalstats":
+        generate_graph("happiness", filename, user, start_date, now, line=True, extra="anxiety")
 
     delete_message(bot, update.message.chat.id, update.message.message_id)
 
@@ -666,29 +668,37 @@ def gen_data_collection(results):
 
     return dates_to_value_mapping.keys(), dates_to_value_mapping.values()
 
-def generate_graph(table, filename, user, start_date, end_date, all_data=False, calc_average=False, line=False):
+def generate_graph(table, filename, user, start_date, end_date, all_data=False, calc_average=False, line=False, extra=None):
     user_id = None if all_data else user.id
     username = "Group" if all_data else get_name(user)
     results = get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
 
+    if extra is not None:
+        results2 = get_values(extra, start_date=start_date, end_date=end_date, user_id=user_id)
+
     if line:
         results = sorted(results, key=lambda x: x[2])
         dates, values = [[x[2].date(), x[1]] for x in results]
+
+        if extra is not None:
+            results2 = sorted(results2, key=lambda x: x[2])
+            dates2, values2 = [[x[2].date(), x[1]] for x in results2]
     else:
         dates, values = gen_data_collection(results)
 
     _, axis = plt.subplots()
-    sorted_dates = sorted(dates)
-    lower_limit = start_date.date() if start_date else sorted_dates[0]
-    upper_limit = end_date.date() if end_date else sorted_dates[-1]
+    lower_limit = start_date.date() if start_date else min(dates)
+    upper_limit = end_date.date() if end_date else max(dates)
     axis.set_xlim([lower_limit, upper_limit])
     axis.xaxis_date()
-
     axis.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
 
     if line:
         axis.set_ylim([0, 10])
         sns.lineplot(dates, values)
+
+        if extra is not None:
+            sns.lineplot(dates2, values2)
     else:
         plt.bar(dates, values, align='center', alpha=0.5)
 
@@ -907,6 +917,7 @@ DISPATCHER.add_handler(CommandHandler('sleep', sleep))
 DISPATCHER.add_handler(CommandHandler('sleepstats', stats))
 DISPATCHER.add_handler(CommandHandler('streak', streak))
 DISPATCHER.add_handler(CommandHandler('summary', summary))
+DISPATCHER.add_handler(CommandHandler('totalstats', stats))
 DISPATCHER.add_handler(MessageHandler(Filters.private, pm))
 
 JOBQUEUE.run_repeating(executereminders, interval=3600, first=time_until_next_hour()+10)
