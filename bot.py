@@ -684,12 +684,6 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
     axis.set_xlim([lower_limit, upper_limit])
     axis.xaxis_date()
 
-    interval = (upper_limit - lower_limit).days
-    if interval > 10:
-        axis.xaxis.set_major_locator(mdates.DayLocator(interval=math.ceil(interval/10)))
-        axis.xaxis.set_minor_locator(mdates.DayLocator())
-    else:
-        axis.xaxis.set_major_locator(mdates.DayLocator())
     axis.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
 
     if line:
@@ -710,6 +704,7 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
     elif table == "sleep" or table == "fasting":
         title_text += " hours"
 
+    interval = (upper_limit - lower_limit).days
     plt.title('{}\'s {}\n{} days {}'.format(username, table, interval, title_text))
     plt.savefig(filename)
     plt.close()
