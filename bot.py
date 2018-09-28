@@ -689,7 +689,7 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
         axis.set_ylim([0, 10])
         sns.lineplot(dates, values)
     else:
-        plt.bar(dates, values, align='center', alpha=0.5)
+        plt.bar(dates, values, alpha=0.5)
 
     sns.despine()
 
