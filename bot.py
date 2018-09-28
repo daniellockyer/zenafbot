@@ -708,7 +708,7 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
     plt.savefig(filename)
     plt.close()
 
-def send_summaries(_, _):
+def send_summaries(bot, update):
     now = datetime.datetime.now()
     seven_days_ago = get_x_days_before(now, 7)
 
