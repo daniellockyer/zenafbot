@@ -710,13 +710,23 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
     else:
         title_text = "total: {:.1f}".format(sum(values))
 
+    if extra is not None:
+        if calc_average or line:
+            title_text += " {:.1f}".format(float(sum(values2)) / max(len(values2), 1))
+        else:
+            title_text += " {:.1f}".format(sum(values2))
+
     if table == "meditation":
         title_text += " minutes"
     elif table in ("sleep", "fasting"):
         title_text += " hours"
 
+    title_table = table
+    if extra is not None:
+        title_table += " " + extra
+
     interval = (upper_limit - lower_limit).days
-    plt.title('{}\'s {}\n{} days {}'.format(username, table, interval, title_text))
+    plt.title('{}\'s {}\n{} days {}'.format(username, title_table, interval, title_text))
     plt.savefig(filename)
     plt.close()
 
