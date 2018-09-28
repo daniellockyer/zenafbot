@@ -625,17 +625,17 @@ def stats(bot, update):
     now = datetime.datetime.now()
     if len(parts) == 2:
         if parts[1] == 'weekly':
-            start_date = get_x_days_before(now, 7)
+            start_date = get_x_days_before(now, 7 - 1)
         elif parts[1] == 'biweekly':
-            start_date = get_x_days_before(now, 14)
+            start_date = get_x_days_before(now, 14 - 1)
         elif parts[1] == 'monthly':
-            start_date = get_x_days_before(now, 31)
+            start_date = get_x_days_before(now, 31 - 1)
         elif parts[1] == 'all':
             # Unbounded search for all dates
             start_date = None
     else:
         # Default to a week ago
-        start_date = get_x_days_before(now, 7)
+        start_date = get_x_days_before(now, 7 - 1)
 
     filename = "./{}-chart.png".format(user.id)
     if command == "/meditatestats":
