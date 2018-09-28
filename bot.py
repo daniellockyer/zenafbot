@@ -1,15 +1,14 @@
 #!/usr/bin/python
 
 from collections import defaultdict
-from email.utils import parseaddr
+from configparser import ConfigParser
 import datetime
 from email.mime.text import MIMEText
-import math
+from email.utils import parseaddr
 import os
 import re
-from pytz import timezone, all_timezones
 import smtplib
-from configparser import ConfigParser
+from pytz import timezone, all_timezones
 
 import dateparser
 import matplotlib
@@ -135,15 +134,14 @@ def help_message(bot, update):
 
     bot.send_message(chat_id=update.message.chat_id, parse_mode="Markdown", text=message)
 
-def get_streak_emoji(streak):
-    if streak == 0:
+def get_streak_emoji(streak_count):
+    if streak_count == 0:
         return "🤔"
-    elif streak < 50:
+    if streak_count < 50:
         return "🔥"
-    else:
-        return "🌶️"
+    return "🌶️"
 
-def pm(bot, update):
+def private_message(bot, update):
     user = get_or_create_user(bot, update)
     has_pm_bot = user[5]
     if has_pm_bot is True:
@@ -168,9 +166,9 @@ def meditate(bot, update):
         return value
 
     def success_callback(name_to_show, value, update, historic_date):
-        streak = get_streak_of(update.message.from_user.id)
-        emoji = get_streak_emoji(streak)
-        bot.send_message(chat_id=update.message.chat.id, text="✅ {} meditated for {} minutes{} ({}{}) 🙏".format(name_to_show, value, historic_date, streak, emoji))
+        streak_count = get_streak_of(update.message.from_user.id)
+        emoji = get_streak_emoji(streak_count)
+        bot.send_message(chat_id=update.message.chat.id, text="✅ {} meditated for {} minutes{} ({}{}) 🙏".format(name_to_show, value, historic_date, streak_count, emoji))
 
     delete_and_send(bot, update, validation_callback, success_callback, {
         "table_name": "meditation",
@@ -188,33 +186,33 @@ def schedulereminders(bot, update):
         conn.commit()
         cursor.close()
         bot.send_message(chat_id=update.message.from_user.id, text="Okay, you won't receive reminders anymore! ✌️")
-        return True
+        return
 
     new_parts = []
     if parts[-1] in all_timezones:
-        tz = timezone(parts[-1])
+        timez = timezone(parts[-1])
         for i in range(1, len(parts) - 1):
             part = parts[i]
             if not re.match('((([1-9])|(1[0-2]))(AM|PM|am|pm))', part):
                 bot.send_message(chat_id=update.message.from_user.id, text="Sorry, I didn't understand this hour: `{}`. "\
                                 "It should look similar to this: `11AM`. The whole command should look similar to this: "\
                                 "`\\reminders 1PM 5PM 11PM UTC`. You can specify as many hours as you like.".format(part))
-                return False
-            else:
-                hour = 0
-                if part.lower().endswith("pm"):
-                    hour = 12
-                hour = (hour + int(part[:-2])) % 24
-                # Take our tz hour, convert it to utc hour
-                notification_hour = tz.localize(datetime.datetime(2018, 3, 23, hour, 0, 0)).astimezone(timezone("UTC")).hour
-                midnight = tz.localize(datetime.datetime(2018, 3, 23, 0, 0, 0)).astimezone(timezone("UTC")).hour
-                new_parts.append((notification_hour, midnight))
+                return
+
+            hour = 0
+            if part.lower().endswith("pm"):
+                hour = 12
+            hour = (hour + int(part[:-2])) % 24
+            # Take our tz hour, convert it to utc hour
+            notification_hour = timez.localize(datetime.datetime(2018, 3, 23, hour, 0, 0)).astimezone(timezone("UTC")).hour
+            midnight = timez.localize(datetime.datetime(2018, 3, 23, 0, 0, 0)).astimezone(timezone("UTC")).hour
+            new_parts.append((notification_hour, midnight))
     else:
         bot.send_message(chat_id=update.message.from_user.id, text="Sorry, I didn't understand the timezone you specified: `{}`. "\
                         "It can take the form of a specific time like `UTC` or as for a country `Europe/Amsterdam`. "\
                         "The whole command should look similar to this: "\
                         "`\\reminders 1PM 5PM 11PM UTC`. You can specify as many hours as you like.".format(parts[len(parts) - 1]))
-        return False
+        return
 
     user = get_or_create_user(bot, update)
     for hours in new_parts:
@@ -504,8 +502,8 @@ def top(bot, update):
 
     line = []
     for i, user in enumerate(top_users):
-        first_name, last_name, username, streak = user
-        emoji = get_streak_emoji(streak)
+        first_name, last_name, username, streak_count = user
+        emoji = get_streak_emoji(streak_count)
 
         if username:
             name_to_show = username
@@ -514,7 +512,7 @@ def top(bot, update):
             if last_name:
                 name_to_show += f' {last_name}'
 
-        line.append(f'{i + 1}. {name_to_show}   ({streak}{emoji})')
+        line.append(f'{i + 1}. {name_to_show}   ({streak_count}{emoji})')
 
     message = '\n'.join(line)
     delete_message(bot, update.message.chat.id, update.message.message_id)
@@ -523,25 +521,26 @@ def top(bot, update):
 def streak(bot, update):
     get_or_create_user(bot, update)
     user_id = update.message.from_user.id
-    streak = get_streak_of(user_id)
-    emoji = get_streak_emoji(streak)
+    streak_count = get_streak_of(user_id)
+    emoji = get_streak_emoji(streak_count)
 
     delete_message(bot, update.message.chat.id, update.message.message_id)
 
     name_to_show = get_name(update.message.from_user)
-    bot.send_message(chat_id=update.message.chat.id, text="{} has a meditation streak of {}! {}".format(name_to_show, streak, emoji))
+    bot.send_message(chat_id=update.message.chat.id, text="{} has a meditation streak of {}! {}".format(name_to_show, streak_count, emoji))
 
 def delete_and_send(bot, update, validation_callback, success_callback, strings, backdate=None):
     get_or_create_user(bot, update)
     parts = update.message.text.split(' ')
     #No command needs parts[0] as it's just the name of the command to be executed.
     parts = parts[1:]
-    if len(parts) < 1:
+    parts_len = len(parts)
+    if parts_len < 1:
         bot.send_message(chat_id=update.message.from_user.id, text=strings["wrong_length"])
         return
 
     #ALLOW A USER TO BACKDATE THEIR RECORD
-    if len(parts) > 1:
+    if parts_len > 1:
         #Try to parse the last 'word' of the user input (eg 24-12-2017)
         #This will allow the user to backdate the message
         #If the parsing fails, they probably didn't try to backdate;
@@ -647,7 +646,7 @@ def stats(bot, update):
         generate_graph("sleep", filename, user, start_date, now, calc_average=True)
     elif command == "/groupstats":
         generate_graph("meditation", filename, user, start_date, now, all_data=True)
-    elif command == "/happinessstats" or command == "/happystats":
+    elif command in ("/happinessstats", "/happystats"):
         generate_graph("happiness", filename, user, start_date, now, line=True)
     elif command == "/fastingstats":
         generate_graph("fasting", filename, user, start_date, now)
@@ -711,7 +710,7 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
 
     if table == "meditation":
         title_text += " minutes"
-    elif table == "sleep" or table == "fasting":
+    elif table in ("sleep", "fasting"):
         title_text += " hours"
 
     interval = (upper_limit - lower_limit).days
@@ -719,7 +718,7 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
     plt.savefig(filename)
     plt.close()
 
-def send_summaries(bot, job):
+def send_summaries(_, _):
     now = datetime.datetime.now()
     seven_days_ago = get_x_days_before(now, 7)
 
@@ -756,7 +755,7 @@ def send_summary_email(user_id):
         return "{:.2f}".format(output)
 
     def mean(results):
-        dates, values = gen_data_collection(results)
+        _, values = gen_data_collection(results)
         return float(sum(values)) / max(len(values), 1)
 
     now = datetime.datetime.now()
@@ -776,7 +775,7 @@ def send_summary_email(user_id):
     body += "💪 Exercised "+exercise_events_len+" times\n"
 
     sleep_events = get_values("sleep", start_date=seven_days_ago, end_date=now, user_id=user_id)
-    if len(sleep_events) != 0 :
+    if len(sleep_events) != 0:
         sleep_mean = f(mean(sleep_events))
         body += "😴 Slept on average "+sleep_mean+" hours per night\n"
 
@@ -790,7 +789,7 @@ def send_summary_email(user_id):
         anxiety_mean = f(mean(anxiety_events))
         body += "😅 Average anxiety level was "+anxiety_mean+"\n"
 
-    TEXT = "Hi "+user[1]+"!\n\nHere are your logged stats for the last seven days:\n\n"+body+"\n\
+    text = "Hi "+user[1]+"!\n\nHere are your logged stats for the last seven days:\n\n"+body+"\n\
 Remember, you can log a multitude of things using the bot - check out /help for more details!\n\n\
 ❤️  Mindful Makers\n\
 https://mindfulmakers.club/"
@@ -801,13 +800,13 @@ https://mindfulmakers.club/"
     server.login(GMAIL_EMAIL, GMAIL_PASSWORD)
 
     try:
-        m = MIMEText(TEXT.encode("UTF-8"), 'plain', "UTF-8")
-        m["From"] = "Mindful Makers <"+GMAIL_EMAIL+">"
-        m["To"] = TO
-        m["Subject"] = "⛩ Weekly Summary"
-        server.sendmail(GMAIL_EMAIL, [TO], m.as_string())
-    except Exception as e:
-        print(e)
+        message = MIMEText(text.encode("UTF-8"), 'plain', "UTF-8")
+        message["From"] = "Mindful Makers <"+GMAIL_EMAIL+">"
+        message["To"] = TO
+        message["Subject"] = "⛩ Weekly Summary"
+        server.sendmail(GMAIL_EMAIL, [TO], message.as_string())
+    except Exception as exception:
+        print(exception)
 
     server.quit()
 
@@ -819,9 +818,9 @@ def time_until_next_hour():
 
 #######################################################################################
 
-cursor = get_connection().cursor()
+CURSOR = get_connection().cursor()
 
-cursor.execute("CREATE TABLE IF NOT EXISTS users(\
+CURSOR.execute("CREATE TABLE IF NOT EXISTS users(\
     id INTEGER UNIQUE NOT NULL,\
     first_name text NOT NULL,\
     last_name text,\
@@ -829,62 +828,62 @@ cursor.execute("CREATE TABLE IF NOT EXISTS users(\
     haspm boolean DEFAULT FALSE\
 );")
 
-cursor.execute("CREATE TABLE IF NOT EXISTS meditation(\
+CURSOR.execute("CREATE TABLE IF NOT EXISTS meditation(\
     id INTEGER NOT NULL REFERENCES users(id),\
     value INTEGER NOT NULL,\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
-cursor.execute("CREATE TABLE IF NOT EXISTS meditationreminders(\
+CURSOR.execute("CREATE TABLE IF NOT EXISTS meditationreminders(\
     id INTEGER NOT NULL REFERENCES users(id),\
     value INTEGER NOT NULL,\
     midnight INTEGER NOT NULL,\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
-cursor.execute("CREATE TABLE IF NOT EXISTS anxiety(\
+CURSOR.execute("CREATE TABLE IF NOT EXISTS anxiety(\
     id INTEGER NOT NULL REFERENCES users(id),\
     value INTEGER NOT NULL,\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
-cursor.execute("CREATE TABLE IF NOT EXISTS sleep(\
+CURSOR.execute("CREATE TABLE IF NOT EXISTS sleep(\
     id INTEGER NOT NULL REFERENCES users(id),\
     value REAL NOT NULL,\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
-cursor.execute("CREATE TABLE IF NOT EXISTS fasting(\
+CURSOR.execute("CREATE TABLE IF NOT EXISTS fasting(\
     id INTEGER NOT NULL REFERENCES users(id),\
     value REAL NOT NULL,\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
-cursor.execute("CREATE TABLE IF NOT EXISTS happiness(\
+CURSOR.execute("CREATE TABLE IF NOT EXISTS happiness(\
     id INTEGER NOT NULL REFERENCES users(id),\
     value INTEGER NOT NULL,\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
-cursor.execute("CREATE TABLE IF NOT EXISTS journal(\
+CURSOR.execute("CREATE TABLE IF NOT EXISTS journal(\
     id INTEGER NOT NULL REFERENCES users(id),\
     value varchar(4096) NOT NULL,\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
-cursor.execute("CREATE TABLE IF NOT EXISTS exercise(\
+CURSOR.execute("CREATE TABLE IF NOT EXISTS exercise(\
     id INTEGER NOT NULL REFERENCES users(id),\
     value varchar(4096) NOT NULL,\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
-cursor.execute("CREATE TABLE IF NOT EXISTS done(\
+CURSOR.execute("CREATE TABLE IF NOT EXISTS done(\
     id INTEGER NOT NULL REFERENCES users(id),\
     value varchar(4096) NOT NULL,\
     created_at TIMESTAMP NOT NULL DEFAULT now()\
 );")
 
-cursor.execute("CREATE TABLE IF NOT EXISTS summary(\
+CURSOR.execute("CREATE TABLE IF NOT EXISTS summary(\
     id INTEGER UNIQUE NOT NULL REFERENCES users(id),\
     email varchar(128) NOT NULL,\
     last_emailed TIMESTAMP NOT NULL DEFAULT 'epoch',\
@@ -892,7 +891,7 @@ cursor.execute("CREATE TABLE IF NOT EXISTS summary(\
 );")
 
 get_connection().commit()
-cursor.close()
+CURSOR.close()
 
 DISPATCHER.add_handler(CommandHandler('anxiety', anxiety))
 DISPATCHER.add_handler(CommandHandler('anxietystats', stats))
@@ -918,7 +917,7 @@ DISPATCHER.add_handler(CommandHandler('sleepstats', stats))
 DISPATCHER.add_handler(CommandHandler('streak', streak))
 DISPATCHER.add_handler(CommandHandler('summary', summary))
 DISPATCHER.add_handler(CommandHandler('totalstats', stats))
-DISPATCHER.add_handler(MessageHandler(Filters.private, pm))
+DISPATCHER.add_handler(MessageHandler(Filters.private, private_message))
 
 JOBQUEUE.run_repeating(executereminders, interval=3600, first=time_until_next_hour()+10)
 JOBQUEUE.run_daily(send_summaries, time=datetime.time(18, 0, 0), days=(6,))
