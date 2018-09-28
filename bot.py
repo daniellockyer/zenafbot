@@ -672,16 +672,9 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
     username = "Group" if all_data else get_name(user)
     results = get_values(table, start_date=start_date, end_date=end_date, user_id=user_id)
 
-    if extra is not None:
-        results2 = get_values(extra, start_date=start_date, end_date=end_date, user_id=user_id)
-
     if line:
         results = sorted(results, key=lambda x: x[2])
         dates, values = [[x[2].date(), x[1]] for x in results]
-
-        if extra is not None:
-            results2 = sorted(results2, key=lambda x: x[2])
-            dates2, values2 = [[x[2].date(), x[1]] for x in results2]
     else:
         dates, values = gen_data_collection(results)
 
@@ -695,9 +688,6 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
     if line:
         axis.set_ylim([0, 10])
         sns.lineplot(dates, values)
-
-        if extra is not None:
-            sns.lineplot(dates2, values2)
     else:
         plt.bar(dates, values, align='center', alpha=0.5)
 
