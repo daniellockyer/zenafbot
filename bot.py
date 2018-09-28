@@ -725,7 +725,7 @@ def generate_graph(table, filename, user, start_date, end_date, all_data=False, 
     if extra is not None:
         title_table += " + " + extra
 
-    interval = (upper_limit - lower_limit).days
+    interval = (upper_limit - lower_limit).days + 1
     plt.title('{}\'s {}\n{} days {}'.format(username, title_table, interval, title_text))
     plt.savefig(filename)
     plt.close()
