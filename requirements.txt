@@ -1,7 +1,7 @@
-matplotlib==2.2.3
+matplotlib==3.1.0
 seaborn==0.9.0
-psycopg2==2.7.5
-python-dateutil==2.7.3
+psycopg2==2.8.3
+python-dateutil==2.8.0
 python-telegram-bot==11.1.0
-dateparser==0.7.0
-pytz==2018.5
+dateparser==0.7.1
+pytz==2019.1
